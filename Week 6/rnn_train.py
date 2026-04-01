@@ -16,8 +16,13 @@ import os
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 from sklearn.utils.class_weight import compute_class_weight
+import json
+
 
 current_dir = os.getcwd()
+output_dir = os.path.join(current_dir, 'Week 6', 'output')
+os.makedirs(output_dir, exist_ok=True) # Creates the folder if it doesn't exist
+
 data_dir = os.path.join(current_dir, 'Week 6', 'data', 'Reddit_Data.csv', 'Reddit_Data.csv')
 df = pd.read_csv(data_dir)
 
@@ -37,16 +42,16 @@ def preprocess(text):
 
 df['tokens'] = df['clean_comment'].apply(preprocess)
 
-# Build Vocabulary (Equivalent to Keras Tokenizer)
+# Build Vocabulary
 all_words = [word for tokens in df['tokens'] for word in tokens]
 word_counts = Counter(all_words)
-# Keep the top 20,000 words
+
 MAX_VOCAB_SIZE = 20000
 vocab = {word: idx + 2 for idx, (word, count) in enumerate(word_counts.most_common(MAX_VOCAB_SIZE))}
 vocab['<PAD>'] = 0  # Padding token
 vocab['<UNK>'] = 1  # Unknown token
 
-# Encode and Pad sequences (Equivalent to pad_sequences)
+# Encode and Pad sequences
 MAX_SEQ_LEN = 50
 
 def encode_text(tokens):
@@ -116,15 +121,12 @@ class SentimentLSTM(nn.Module):
 VOCAB_SIZE = len(vocab)
 EMBED_DIM = 128
 HIDDEN_DIM = 128
-OUTPUT_DIM = 3  # 3 Sentiment Classes
+OUTPUT_DIM = 3 
 N_LAYERS = 2
 BIDIRECTIONAL = True
 DROPOUT = 0.3
 
-# Determine device (Use GPU if available on your local machine)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device('cpu')
-print(f"Using device: {device}")
 
 model = SentimentLSTM(VOCAB_SIZE, EMBED_DIM, HIDDEN_DIM, OUTPUT_DIM, N_LAYERS, BIDIRECTIONAL, DROPOUT)
 model = model.to(device)
@@ -143,9 +145,6 @@ weights_tensor = torch.tensor(class_weights, dtype=torch.float).to(device)
 criterion = nn.CrossEntropyLoss(weight=weights_tensor)
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
 
-# ==========================================
-# 5. TRAINING LOOP
-# ==========================================
 def train(model, loader, optimizer, criterion):
     model.train()
     epoch_loss = 0
@@ -168,20 +167,35 @@ def train(model, loader, optimizer, criterion):
     return epoch_loss / len(loader), correct / total
 
 EPOCHS = 20
+training_logs = [] 
+
 for epoch in range(EPOCHS):
     train_loss, train_acc = train(model, train_loader, optimizer, criterion)
-    print(f'Epoch {epoch+1}/{EPOCHS} | Train Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
+    log_line = f'Epoch {epoch+1}/{EPOCHS} | Train Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%'
+    print(log_line)
+    
+    training_logs.append({
+        'epoch': epoch + 1,
+        'train_loss': train_loss,
+        'train_acc': train_acc
+    })
 
-# ==========================================
-# 6. EVALUATION LOOP
-# ==========================================
+# SAVE TRAINING LOGS 
+logs_path = os.path.join(output_dir, 'training_logs.csv')
+pd.DataFrame(training_logs).to_csv(logs_path, index=False)
+print(f"Training logs saved to {logs_path}")
+
+# SAVE THE MODEL
+model_path = os.path.join(output_dir, 'sentiment_lstm_model.pth')
+torch.save(model.state_dict(), model_path)
+print(f"Model weights saved to {model_path}")
+
 def evaluate(model, loader, criterion):
     model.eval() # Put model in evaluation mode
     epoch_loss = 0
     correct = 0
     total = 0
     
-    # Lists to store true and predicted labels for metrics
     all_predictions = []
     all_targets = []
     
@@ -208,15 +222,21 @@ print("\nEvaluating model on test dataset...")
 test_loss, test_acc, true_labels, pred_labels = evaluate(model, test_loader, criterion)
 print(f'Test Loss: {test_loss:.3f} | Test Acc: {test_acc*100:.2f}%\n')
 
-# ==========================================
-# 7. DETAILED METRICS & CONFUSION MATRIX
-# ==========================================
 target_names = ['Negative (0)', 'Neutral (1)', 'Positive (2)']
 
+# --- GENERATE AND SAVE CLASSIFICATION REPORT ---
+report_str = classification_report(true_labels, pred_labels, target_names=target_names)
 print("Classification Report:")
-print(classification_report(true_labels, pred_labels, target_names=target_names))
+print(report_str)
 
-# Plotting the Confusion Matrix
+report_path = os.path.join(output_dir, 'classification_report.txt')
+with open(report_path, 'w') as f:
+    f.write(f"Test Loss: {test_loss:.3f} | Test Acc: {test_acc*100:.2f}%\n\n")
+    f.write("Classification Report:\n")
+    f.write(report_str)
+print(f"Classification report saved to {report_path}")
+
+# --- GENERATE AND SAVE CONFUSION MATRIX PLOT ---
 cm = confusion_matrix(true_labels, pred_labels)
 plt.figure(figsize=(8, 6))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
@@ -224,4 +244,6 @@ sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
 plt.title('Sentiment Analysis Confusion Matrix')
 plt.ylabel('Actual Sentiment')
 plt.xlabel('Predicted Sentiment')
-plt.show()
+
+plot_path = os.path.join(output_dir, 'confusion_matrix.png')
+plt.savefig(plot_path, bbox_inches='tight', dpi=300)

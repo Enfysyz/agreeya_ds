@@ -64,6 +64,11 @@ def encode_text(tokens):
 
 df['encoded'] = df['tokens'].apply(encode_text)
 
+vocab_path = os.path.join(output_dir, 'vocab.json')
+with open(vocab_path, 'w') as f:
+    json.dump(vocab, f)
+print(f"Vocabulary saved to {vocab_path}")
+
 class TweetDataset(Dataset):
     def __init__(self, sequences, labels):
         self.sequences = torch.tensor(sequences, dtype=torch.long)

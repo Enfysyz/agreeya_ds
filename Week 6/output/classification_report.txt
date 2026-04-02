@@ -1,11 +1,11 @@
-Test Loss: 0.492 | Test Acc: 87.59%
+Test Loss: 0.510 | Test Acc: 87.56%
 
 Classification Report:
               precision    recall  f1-score   support
 
-Negative (0)       0.78      0.78      0.78      1597
+Negative (0)       0.79      0.79      0.79      1597
  Neutral (1)       0.92      0.94      0.93      2654
-Positive (2)       0.89      0.87      0.88      3179
+Positive (2)       0.88      0.87      0.88      3179
 
     accuracy                           0.88      7430
    macro avg       0.86      0.86      0.86      7430

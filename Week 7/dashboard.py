@@ -7,36 +7,45 @@ from feature_store import FeatureStore
 
 console = Console()
 
-def generate_dashboard(at_risk_customers_df):
-    console.print("\n[bold cyan] Dynamic Revenue Recovery Dashboard[/bold cyan]\n")
+def generate_dashboard(pipeline_df, churn_threshold):
+    console.print("\n[bold cyan]Dynamic Revenue Recovery Dashboard[/bold cyan]\n")
     
+    # --- Calculate Pipeline Metrics ---
+    total_tested = len(pipeline_df)
+    
+    # Count how many rows have a churn probability over our threshold
+    predicted_churners = len(pipeline_df[pipeline_df['Churn_Prob'] > churn_threshold])
+    
+    # Summary Header
+    console.print("[bold white]Daily Pipeline Summary[/bold white]")
+    console.print(f" • Total Accounts Evaluated: [bold]{total_tested}[/bold]")
+    console.print(f" • Accounts at Risk (> {churn_threshold * 100} % Prob): [bold red]{predicted_churners}[/bold red]\n")
+    
+    # --- Table Logic ---
     table = Table(show_header=True, header_style="bold white")
     table.add_column("Customer ID", width=15)
     table.add_column("Churn Probability", justify="right", style="yellow")
-    table.add_column("Predicted 12M LTV", justify="right", style="green")
     table.add_column("Revenue at Risk", style="red bold", justify="right")
     
     total_risk = 0
     
-    # Sort the dataframe so the highest Revenue at Risk is at the top of the dashboard
-    at_risk_customers_df['Risk_Amount'] = at_risk_customers_df['Churn_Prob'] * at_risk_customers_df['LTV']
-    at_risk_customers_df = at_risk_customers_df.sort_values(by='Risk_Amount', ascending=False)
+    # Sort by highest Revenue at Risk
+    pipeline_df['Risk_Amount'] = pipeline_df['Churn_Prob'] * pipeline_df['LTV']
+    pipeline_df = pipeline_df.sort_values(by='Risk_Amount', ascending=False)
     
-    for _, row in at_risk_customers_df.iterrows():
-        # Only show accounts that cross the "At-Risk" threshold (> 60% probability)
-        if row['Churn_Prob'] > 0.60:
+    for _, row in pipeline_df.iterrows():
+        # Only show accounts that cross the At-Risk threshold
+        if row['Churn_Prob'] > churn_threshold:
             risk_amount = row['LTV']
             total_risk += risk_amount
             table.add_row(
                 str(row['CustomerID']),
                 f"{row['Churn_Prob'] * 100:.1f}%",
-                f"${row['LTV']:,.2f}",
                 f"${risk_amount:,.2f}"
             )
             
     console.print(table)
     console.print(f"\n[bold red]Total Pipeline Revenue at Risk: ${total_risk:,.2f}[/bold red]\n")
-
 
 if __name__ == "__main__":
     console.print("[dim]Loading model and fetching real-time pipeline data...[/dim]")
@@ -71,4 +80,4 @@ if __name__ == "__main__":
     })
     
     # Render the Dashboard
-    generate_dashboard(pipeline_data)
+    generate_dashboard(pipeline_data, 0.60)

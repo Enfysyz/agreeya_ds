@@ -50,15 +50,16 @@ def generate_dashboard(pipeline_df, churn_threshold):
 if __name__ == "__main__":
     console.print("[dim]Loading model and fetching real-time pipeline data...[/dim]")
     
-    # Load the trained model 
-    model = joblib.load('Week 7/output/revenue_risk_ensemble.pkl')
-    
     # Feature Store to process the raw data 
-    train_file = 'Week 7/data/customer_churn_dataset-training-master.csv'
-    test_file = 'Week 7/data/customer_churn_dataset-testing-master.csv'
+    TRAIN_FILE = 'Week 7/revenue_recovery/data/customer_churn_dataset-training-master.csv'
+    TEST_FILE = 'Week 7/revenue_recovery/data/customer_churn_dataset-testing-master.csv'
+    MODEL_PATH = 'Week 7/revenue_recovery/output/revenue_risk_ensemble.pkl'
+    
+    # Load the trained model 
+    model = joblib.load(MODEL_PATH)
     
     # Suppress print statements from FeatureStore if desired, or let them run
-    store = FeatureStore(train_path=train_file, test_path=test_file)
+    store = FeatureStore(train_path=TRAIN_FILE, test_path=TEST_FILE)
     
     # Get the pre-processed test data
     _, X_test, _, _, test_customer_ids = store.get_train_test_splits(test_size=0.20)

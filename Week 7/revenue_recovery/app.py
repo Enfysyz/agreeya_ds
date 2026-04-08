@@ -5,6 +5,7 @@ import pandas as pd
 import joblib
 import plotly.express as px
 from feature_store import FeatureStore
+import plotly.graph_objects as go
 
 # --- Page Configuration ---
 st.set_page_config(page_title="Revenue Recovery Hub", page_icon="📈", layout="wide")
@@ -157,7 +158,7 @@ if uploaded_file is not None:
         plot_df['Status'] = results_df['Status'].values
         plot_df['Grouping'] = "" # Dummy column for strip plot alignment
 
-        # Helper 1: Overlapping Strip Plot 
+        # Helper 1: Overlapping Strip Plot (Golden Star Highlight)
         def create_strip_chart(df, column, title, cust_val, is_currency=False):
             fig = px.strip(df, x=column, y='Grouping', color='Status', hover_data=['CustomerID'], title=title, 
                            color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
@@ -165,9 +166,19 @@ if uploaded_file is not None:
             
             fig.update_traces(marker=dict(size=8, opacity=0.6), jitter=1.0)
             
-            fig.add_vline(x=cust_val, line_width=4, line_dash="solid", line_color="#0f172a",
-                          annotation_text=f"Selected: {cust_val:,.0f}" if is_currency else f"Selected: {cust_val}", 
-                          annotation_position="top right")
+            # REMOVED the black vertical line and REPLACED with a Golden Star marker
+            val_text = f"{cust_val:,.0f}" if is_currency else f"{cust_val}"
+            fig.add_trace(go.Scatter(
+                x=[cust_val], 
+                y=[""], # Aligns with our dummy 'Grouping' axis
+                mode='markers+text',
+                marker=dict(color='#eab308', size=16, symbol='star', line=dict(color='#713f12', width=2)),
+                text=[f"Selected: {val_text}"],
+                textposition="top center",
+                textfont=dict(color='#9ca3af', size=12),
+                hoverinfo='skip',
+                showlegend=False
+            ))
             
             fig.update_layout(
                 boxmode='overlay', 
@@ -178,16 +189,17 @@ if uploaded_file is not None:
             )
             return fig
 
-        # Helper 2: Stacked Bar Chart 
+        # Helper 2: Stacked Bar Chart (Golden Dashed Line)
         def create_stacked_bar(df, column, title, cust_val):
-            # Using px.histogram automatically bins and counts the integers
             fig = px.histogram(df, x=column, color='Status', title=title,
                                color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
                                template='plotly_white', barmode='stack')
             
-            fig.add_vline(x=cust_val, line_width=4, line_dash="solid", line_color="#0f172a",
+            # REPLACED the solid black line with a sleek, dashed golden line
+            fig.add_vline(x=cust_val, line_width=3, line_dash="dash", line_color="#eab308",
                           annotation_text=f"Selected: {cust_val}", 
-                          annotation_position="top right")
+                          annotation_position="top right",
+                          annotation_font=dict(color="#9ca3af"))
             
             fig.update_layout(
                 margin=dict(t=40, b=10, l=10, r=10), 

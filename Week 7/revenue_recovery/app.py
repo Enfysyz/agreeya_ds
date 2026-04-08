@@ -176,15 +176,31 @@ if uploaded_file is not None:
                            color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
                            template='plotly_white', barmode='stack')
         
-        # Only draw the golden line if a customer value exists
         if cust_val is not None:
-            fig.add_vline(x=cust_val, line_width=3, line_dash="dash", line_color="#eab308",
-                          annotation_text=f"Selected: {cust_val}", 
-                          annotation_position="top right",
-                          annotation_font=dict(color="#9ca3af"))
+            if isinstance(cust_val, str):
+                # THE FIX: Anchored to the exact top edge (1.0) and pushed text upwards
+                fig.add_annotation(
+                    x=cust_val, 
+                    y=1.0, 
+                    yref="paper", 
+                    yanchor="bottom", # Forces text to render above the arrow, not over it
+                    yshift=5,         # Adds a tiny 5px gap between the arrow and the chart ceiling
+                    text=f"Selected: {cust_val}",
+                    showarrow=True, 
+                    arrowhead=2, 
+                    arrowsize=1,
+                    arrowwidth=2,
+                    arrowcolor="#eab308",
+                    font=dict(color="#9ca3af")
+                )
+            else:
+                fig.add_vline(x=cust_val, line_width=3, line_dash="dash", line_color="#eab308",
+                              annotation_text=f"Selected: {cust_val}", 
+                              annotation_position="top right",
+                              annotation_font=dict(color="#9ca3af"))
         
         fig.update_layout(
-            margin=dict(t=40, b=10, l=10, r=10), 
+            margin=dict(t=70, b=10, l=10, r=10), # THE FIX: Increased top margin from 40 to 70
             yaxis_title="Number of Customers", 
             xaxis_title="",
             showlegend=False
@@ -199,7 +215,7 @@ if uploaded_file is not None:
         
         # Show Profile Card
         with st.container(border=True):
-            st.markdown(f"#### Customer Profile: {selected_id}")
+            st.markdown(f"#### 👤 Customer Profile: {selected_id}")
             p1, p2, p3, p4 = st.columns(4)
             p1.markdown(f"**Gender**\n\n{cust_raw['Gender']}")
             p2.markdown(f"**Subscription**\n\n{cust_raw['Subscription Type']}")
@@ -214,20 +230,24 @@ if uploaded_file is not None:
         val_calls = cust_raw['Support Calls']
         val_age = cust_raw['Age']
         val_delay = cust_raw['Payment Delay']
+        val_gender = cust_raw['Gender']
+        val_contract = cust_raw['Contract Length']
     else:
         # If "None" is selected, pass None to the charts
-        val_spend = val_calls = val_age = val_delay = None
+        val_spend = val_calls = val_age = val_delay = val_gender = val_contract = None
 
-    # 5. Always Draw the Charts
+    # 5. Always Draw the Charts (Now in a perfectly balanced 3x2 grid)
     chart_col1, chart_col2 = st.columns(2)
     
     with chart_col1:
         st.plotly_chart(create_strip_chart(plot_df, 'Total Spend', "Total Spend Distribution", val_spend, True), use_container_width=True)
         st.plotly_chart(create_stacked_bar(plot_df, 'Support Calls', "Support Calls Distribution", val_calls), use_container_width=True)
+        st.plotly_chart(create_stacked_bar(plot_df, 'Gender', "Gender Distribution", val_gender), use_container_width=True)
         
     with chart_col2:
         st.plotly_chart(create_strip_chart(plot_df, 'Age', "Age Distribution", val_age), use_container_width=True)
         st.plotly_chart(create_stacked_bar(plot_df, 'Payment Delay', "Payment Delay (Days) Distribution", val_delay), use_container_width=True)
+        st.plotly_chart(create_stacked_bar(plot_df, 'Contract Length', "Contract Length Distribution", val_contract), use_container_width=True)
 else:
     # Empty state when no file is uploaded
     st.info("Upload a pipeline CSV file in the sidebar to begin your analysis")

@@ -1,3 +1,5 @@
+#  streamlit run 'Week 7/revenue_recovery/app.py'
+
 import streamlit as st
 import pandas as pd
 import joblib
@@ -203,7 +205,7 @@ if uploaded_file is not None:
             st.plotly_chart(create_stacked_bar(plot_df, 'Support Calls', "Support Calls Distribution", cust_raw['Support Calls']), use_container_width=True)
             
         with chart_col2:
-            st.plotly_chart(create_strip_chart(plot_df, 'Tenure', "Tenure (Months) Distribution", cust_raw['Tenure']), use_container_width=True)
+            st.plotly_chart(create_strip_chart(plot_df, 'Age', "Age Distribution", cust_raw['Age']), use_container_width=True)
             st.plotly_chart(create_stacked_bar(plot_df, 'Payment Delay', "Payment Delay (Days) Distribution", cust_raw['Payment Delay']), use_container_width=True)
 
 else:

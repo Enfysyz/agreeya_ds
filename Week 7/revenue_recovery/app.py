@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.express as px
-import plotly.graph_objects as go
 from feature_store import FeatureStore
 
 # --- 1. Page Configuration ---
@@ -126,29 +125,47 @@ if uploaded_file is not None:
         # Display Basic Info in a clean banner
         st.info(f"**Customer {selected_id} Profile** | **Gender:** {cust_raw['Gender']} | **Subscription:** {cust_raw['Subscription Type']} | **Contract:** {cust_raw['Contract Length']} | **Predicted Churn:** {cust_results['Churn_Prob']*100:.1f}%")
         
-        # Helper function to generate comparative charts
+        # Prepare data for plotting by combining raw inputs with predicted status
+        plot_df = input_df.copy()
+        plot_df['Status'] = results_df['Status'].values
+        
+        # THE FIX 1: Create a single dummy column so all dots share the exact same Y-axis baseline
+        plot_df['Grouping'] = ""
+
+        # Helper function to generate overlapping dot charts
         def create_comparison_chart(df, column, title, cust_val, is_currency=False):
-            fig = px.histogram(df, x=column, nbins=20, title=title, 
-                               template='plotly_white', color_discrete_sequence=['#cbd5e1'])
+            # THE FIX 2: Assign y to our dummy column
+            fig = px.strip(df, x=column, y='Grouping', color='Status', hover_data=['CustomerID'], title=title, 
+                           color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
+                           template='plotly_white')
             
-            # Add the red vertical line highlighting the customer
-            fig.add_vline(x=cust_val, line_width=4, line_dash="solid", line_color="#ef4444",
-                          annotation_text=f"This Customer: {cust_val:,.0f}" if is_currency else f"This Customer: {cust_val}", 
+            # Increase jitter to 1.0 to maximize vertical spread so you can see density
+            fig.update_traces(marker=dict(size=8, opacity=0.6), jitter=1.0)
+            
+            fig.add_vline(x=cust_val, line_width=4, line_dash="solid", line_color="#0f172a",
+                          annotation_text=f"Selected: {cust_val:,.0f}" if is_currency else f"Selected: {cust_val}", 
                           annotation_position="top right")
             
-            fig.update_layout(margin=dict(t=40, b=10, l=10, r=10), yaxis_title="Number of Customers", xaxis_title="")
+            fig.update_layout(
+                boxmode='overlay', # THE FIX 3: This explicitly prevents Plotly from separating the colors
+                margin=dict(t=40, b=10, l=10, r=10), 
+                yaxis=dict(showticklabels=False, title="", visible=False), # Hide the Y-axis entirely
+                xaxis_title="",
+                legend_title_text="",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1) 
+            )
             return fig
 
         # Generate the 4 comparative charts
         chart_col1, chart_col2 = st.columns(2)
         
         with chart_col1:
-            st.plotly_chart(create_comparison_chart(input_df, 'Total Spend', "Total Spend Distribution", cust_raw['Total Spend'], True), use_container_width=True)
-            st.plotly_chart(create_comparison_chart(input_df, 'Support Calls', "Support Calls Distribution", cust_raw['Support Calls']), use_container_width=True)
+            st.plotly_chart(create_comparison_chart(plot_df, 'Total Spend', "Total Spend Distribution", cust_raw['Total Spend'], True), use_container_width=True)
+            st.plotly_chart(create_comparison_chart(plot_df, 'Support Calls', "Support Calls Distribution", cust_raw['Support Calls']), use_container_width=True)
             
         with chart_col2:
-            st.plotly_chart(create_comparison_chart(input_df, 'Tenure', "Tenure (Months) Distribution", cust_raw['Tenure']), use_container_width=True)
-            st.plotly_chart(create_comparison_chart(input_df, 'Payment Delay', "Payment Delay (Days) Distribution", cust_raw['Payment Delay']), use_container_width=True)
+            st.plotly_chart(create_comparison_chart(plot_df, 'Tenure', "Tenure (Months) Distribution", cust_raw['Tenure']), use_container_width=True)
+            st.plotly_chart(create_comparison_chart(plot_df, 'Payment Delay', "Payment Delay (Days) Distribution", cust_raw['Payment Delay']), use_container_width=True)
 
 else:
     # Empty state when no file is uploaded

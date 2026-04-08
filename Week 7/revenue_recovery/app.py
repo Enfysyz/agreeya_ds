@@ -7,12 +7,23 @@ from feature_store import FeatureStore
 # --- Page Configuration ---
 st.set_page_config(page_title="Revenue Recovery Hub", page_icon="📈", layout="wide")
 
-# Custom CSS 
+# Custom CSS for a cleaner, professional look
 st.markdown("""
     <style>
     .block-container { padding-top: 2rem; padding-bottom: 2rem; }
     h1, h2, h3 { color: #0f172a; }
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    
+    div[data-testid="stMetric"] { 
+        background-color: #ffffff; 
+        padding: 15px; 
+        border-radius: 8px; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+        border: 1px solid #e2e8f0; 
+        min-height: 135px; /* THE FIX: Forces all metric boxes to be the exact same height */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -87,7 +98,7 @@ if uploaded_file is not None:
     c3.metric("Accounts at Risk", at_risk, delta=f"{(at_risk/total_tested)*100:.1f}% of pipeline", delta_color="inverse")
     c4.metric("Revenue at Risk", f"${risk_rev:,.0f}", delta=f"{risk_percentage:.1f}% of total LTV", delta_color="inverse")
 
-    st.markdown("---")
+    # st.markdown("---")
 
     # --- Visuals & Action List ---
     col_viz, col_table = st.columns([1, 1.5])
@@ -110,7 +121,7 @@ if uploaded_file is not None:
         display_df['Risk Amount'] = display_df['Risk Amount'].apply(lambda x: f"${x:,.2f}")
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-    st.markdown("---")
+    # st.markdown("---")
 
     # --- Customer Deep Dive ---
     st.subheader("🔍 Comparative Customer Inspector")
@@ -122,8 +133,22 @@ if uploaded_file is not None:
         cust_raw = input_df[input_df['CustomerID'] == selected_id].iloc[0]
         cust_results = results_df[results_df['CustomerID'] == selected_id].iloc[0]
         
-        # Display Basic Info in a clean banner
-        st.info(f"**Customer {selected_id} Profile** | **Gender:** {cust_raw['Gender']} | **Subscription:** {cust_raw['Subscription Type']} | **Contract:** {cust_raw['Contract Length']} | **Predicted Churn:** {cust_results['Churn_Prob']*100:.1f}%")
+        # --- Replace st.info with a sleek Profile Card ---
+        with st.container(border=True):
+            st.markdown(f"#### Customer Profile: {selected_id}")
+            
+            # Create a mini-grid for the profile attributes
+            p1, p2, p3, p4 = st.columns(4)
+            
+            p1.markdown(f"**Gender**\n\n{cust_raw['Gender']}")
+            p2.markdown(f"**Subscription**\n\n{cust_raw['Subscription Type']}")
+            p3.markdown(f"**Contract**\n\n{cust_raw['Contract Length']}")
+            
+            # Dynamically color the Churn probability based on risk
+            prob = cust_results['Churn_Prob'] * 100
+            color = "red" if prob >= (churn_threshold * 100) else "green"
+            
+            p4.markdown(f"**Predicted Churn**\n\n:{color}[**{prob:.1f}%**]")
         
         # Prepare data for plotting
         plot_df = input_df.copy()

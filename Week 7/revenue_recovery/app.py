@@ -172,38 +172,55 @@ if uploaded_file is not None:
         return fig
 
     def create_stacked_bar(df, column, title, cust_val=None):
-        fig = px.histogram(df, x=column, color='Status', title=title,
+        fig = px.histogram(df, x=column, color='Status', 
                            color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
                            template='plotly_white', barmode='stack')
         
+        # VISUAL UPGRADE 1: Add crisp white borders and soften the colors slightly
+        fig.update_traces(marker_line_width=1.5, marker_line_color='white', opacity=0.9)
+        
         if cust_val is not None:
             if isinstance(cust_val, str):
-                # THE FIX: Anchored to the exact top edge (1.0) and pushed text upwards
                 fig.add_annotation(
                     x=cust_val, 
                     y=1.0, 
                     yref="paper", 
-                    yanchor="bottom", # Forces text to render above the arrow, not over it
-                    yshift=5,         # Adds a tiny 5px gap between the arrow and the chart ceiling
+                    yanchor="bottom", 
+                    yshift=10, 
                     text=f"Selected: {cust_val}",
                     showarrow=True, 
                     arrowhead=2, 
                     arrowsize=1,
                     arrowwidth=2,
                     arrowcolor="#eab308",
-                    font=dict(color="#9ca3af")
+                    font=dict(color="#9ca3af", size=12)
                 )
             else:
                 fig.add_vline(x=cust_val, line_width=3, line_dash="dash", line_color="#eab308",
                               annotation_text=f"Selected: {cust_val}", 
                               annotation_position="top right",
-                              annotation_font=dict(color="#9ca3af"))
+                              annotation_font=dict(color="#9ca3af", size=12))
         
+        # Check if the data is text (categorical) so we can auto-sort it
+        is_categorical = df[column].dtype == 'object'
+        
+        # VISUAL UPGRADE 2: Polish the layout, gridlines, and spacing
         fig.update_layout(
-            margin=dict(t=70, b=10, l=10, r=10), # THE FIX: Increased top margin from 40 to 70
+            title=dict(text=title, y=0.98, yref="container", font=dict(color="#0f172a", size=15)), 
+            margin=dict(t=90, b=10, l=10, r=10), 
             yaxis_title="Number of Customers", 
             xaxis_title="",
-            showlegend=False
+            showlegend=False,
+            bargap=0.25, # Adds sleek breathing room between the columns
+            xaxis=dict(
+                showgrid=False, # Hide vertical grid lines for a cleaner look
+                categoryorder='total descending' if is_categorical else None # Sort text categories largest to smallest
+            ), 
+            yaxis=dict(
+                showgrid=True, 
+                gridcolor='#f1f5f9', # Make horizontal grid lines very faint
+                zerolinecolor='#e2e8f0' # Soften the bottom zero-line
+            )
         )
         return fig
 

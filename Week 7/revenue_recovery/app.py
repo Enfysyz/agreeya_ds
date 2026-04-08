@@ -126,51 +126,33 @@ if uploaded_file is not None:
 
     # st.markdown("---")
 
-    # --- Customer Deep Dive ---
-    st.subheader("🔍 Comparative Customer Inspector")
-    st.markdown("Select a customer to see how their behavior compares to the rest of the uploaded pipeline.")
+    # --- Customer Deep Dive (The Highlight Feature) ---
+    st.subheader("Comparative Customer Inspector")
+    st.markdown("View overall pipeline distributions, or select a customer to see how their behavior compares.")
     
-    selected_id = st.selectbox("Select Customer ID", results_df['CustomerID'].astype(int).sort_values())
+    # 1. Add "None" to the start of the dropdown options
+    customer_options = ["None"] + results_df['CustomerID'].astype(int).sort_values().tolist()
+    selected_id = st.selectbox("Select Customer ID", customer_options)
     
-    if selected_id:
-        cust_raw = input_df[input_df['CustomerID'] == selected_id].iloc[0]
-        cust_results = results_df[results_df['CustomerID'] == selected_id].iloc[0]
-        
-        # --- Replace st.info with a sleek Profile Card ---
-        with st.container(border=True):
-            st.markdown(f"#### Customer Profile: {selected_id}")
-            
-            # Create a mini-grid for the profile attributes
-            p1, p2, p3, p4 = st.columns(4)
-            
-            p1.markdown(f"**Gender**\n\n{cust_raw['Gender']}")
-            p2.markdown(f"**Subscription**\n\n{cust_raw['Subscription Type']}")
-            p3.markdown(f"**Contract**\n\n{cust_raw['Contract Length']}")
-            
-            # Dynamically color the Churn probability based on risk
-            prob = cust_results['Churn_Prob'] * 100
-            color = "red" if prob >= (churn_threshold * 100) else "green"
-            
-            p4.markdown(f"**Predicted Churn**\n\n:{color}[**{prob:.1f}%**]")
-        
-        # Prepare data for plotting
-        plot_df = input_df.copy()
-        plot_df['Status'] = results_df['Status'].values
-        plot_df['Grouping'] = "" # Dummy column for strip plot alignment
+    # 2. Prepare data for plotting (Happens ALWAYS, regardless of selection)
+    plot_df = input_df.copy()
+    plot_df['Status'] = results_df['Status'].values
+    plot_df['Grouping'] = "" # Dummy column for strip plot alignment
 
-        # Helper 1: Overlapping Strip Plot (Golden Star Highlight)
-        def create_strip_chart(df, column, title, cust_val, is_currency=False):
-            fig = px.strip(df, x=column, y='Grouping', color='Status', hover_data=['CustomerID'], title=title, 
-                           color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
-                           template='plotly_white')
-            
-            fig.update_traces(marker=dict(size=8, opacity=0.6), jitter=1.0)
-            
-            # REMOVED the black vertical line and REPLACED with a Golden Star marker
+    # 3. Updated Helper Functions (Now handle 'None' gracefully)
+    def create_strip_chart(df, column, title, cust_val=None, is_currency=False):
+        fig = px.strip(df, x=column, y='Grouping', color='Status', hover_data=['CustomerID'], title=title, 
+                       color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
+                       template='plotly_white')
+        
+        fig.update_traces(marker=dict(size=8, opacity=0.6), jitter=1.0)
+        
+        # Only draw the golden star if a customer value exists
+        if cust_val is not None:
             val_text = f"{cust_val:,.0f}" if is_currency else f"{cust_val}"
             fig.add_trace(go.Scatter(
                 x=[cust_val], 
-                y=[""], # Aligns with our dummy 'Grouping' axis
+                y=[""], 
                 mode='markers+text',
                 marker=dict(color='#eab308', size=16, symbol='star', line=dict(color='#713f12', width=2)),
                 text=[f"Selected: {val_text}"],
@@ -179,47 +161,73 @@ if uploaded_file is not None:
                 hoverinfo='skip',
                 showlegend=False
             ))
-            
-            fig.update_layout(
-                boxmode='overlay', 
-                margin=dict(t=40, b=10, l=10, r=10), 
-                yaxis=dict(showticklabels=False, title="", visible=False), 
-                xaxis_title="",
-                showlegend=False
-            )
-            return fig
+        
+        fig.update_layout(
+            boxmode='overlay', 
+            margin=dict(t=40, b=10, l=10, r=10), 
+            yaxis=dict(showticklabels=False, title="", visible=False), 
+            xaxis_title="",
+            showlegend=False
+        )
+        return fig
 
-        # Helper 2: Stacked Bar Chart (Golden Dashed Line)
-        def create_stacked_bar(df, column, title, cust_val):
-            fig = px.histogram(df, x=column, color='Status', title=title,
-                               color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
-                               template='plotly_white', barmode='stack')
-            
-            # REPLACED the solid black line with a sleek, dashed golden line
+    def create_stacked_bar(df, column, title, cust_val=None):
+        fig = px.histogram(df, x=column, color='Status', title=title,
+                           color_discrete_map={'At Risk': '#ef4444', 'Safe': '#10b981'},
+                           template='plotly_white', barmode='stack')
+        
+        # Only draw the golden line if a customer value exists
+        if cust_val is not None:
             fig.add_vline(x=cust_val, line_width=3, line_dash="dash", line_color="#eab308",
                           annotation_text=f"Selected: {cust_val}", 
                           annotation_position="top right",
                           annotation_font=dict(color="#9ca3af"))
-            
-            fig.update_layout(
-                margin=dict(t=40, b=10, l=10, r=10), 
-                yaxis_title="Number of Customers", 
-                xaxis_title="",
-                showlegend=False
-            )
-            return fig
-
-        # Generate the 4 comparative charts
-        chart_col1, chart_col2 = st.columns(2)
         
-        with chart_col1:
-            st.plotly_chart(create_strip_chart(plot_df, 'Total Spend', "Total Spend Distribution", cust_raw['Total Spend'], True), use_container_width=True)
-            st.plotly_chart(create_stacked_bar(plot_df, 'Support Calls', "Support Calls Distribution", cust_raw['Support Calls']), use_container_width=True)
-            
-        with chart_col2:
-            st.plotly_chart(create_strip_chart(plot_df, 'Age', "Age Distribution", cust_raw['Age']), use_container_width=True)
-            st.plotly_chart(create_stacked_bar(plot_df, 'Payment Delay', "Payment Delay (Days) Distribution", cust_raw['Payment Delay']), use_container_width=True)
+        fig.update_layout(
+            margin=dict(t=40, b=10, l=10, r=10), 
+            yaxis_title="Number of Customers", 
+            xaxis_title="",
+            showlegend=False
+        )
+        return fig
 
+    # 4. Handle Selection Logic
+    if selected_id != "None":
+        # Extract specific customer data
+        cust_raw = input_df[input_df['CustomerID'] == selected_id].iloc[0]
+        cust_results = results_df[results_df['CustomerID'] == selected_id].iloc[0]
+        
+        # Show Profile Card
+        with st.container(border=True):
+            st.markdown(f"#### Customer Profile: {selected_id}")
+            p1, p2, p3, p4 = st.columns(4)
+            p1.markdown(f"**Gender**\n\n{cust_raw['Gender']}")
+            p2.markdown(f"**Subscription**\n\n{cust_raw['Subscription Type']}")
+            p3.markdown(f"**Contract**\n\n{cust_raw['Contract Length']}")
+            
+            prob = cust_results['Churn_Prob'] * 100
+            color = "red" if prob >= (churn_threshold * 100) else "green"
+            p4.markdown(f"**Predicted Churn**\n\n:{color}[**{prob:.1f}%**]")
+            
+        # Assign values for highlighting
+        val_spend = cust_raw['Total Spend']
+        val_calls = cust_raw['Support Calls']
+        val_age = cust_raw['Age']
+        val_delay = cust_raw['Payment Delay']
+    else:
+        # If "None" is selected, pass None to the charts
+        val_spend = val_calls = val_age = val_delay = None
+
+    # 5. Always Draw the Charts
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        st.plotly_chart(create_strip_chart(plot_df, 'Total Spend', "Total Spend Distribution", val_spend, True), use_container_width=True)
+        st.plotly_chart(create_stacked_bar(plot_df, 'Support Calls', "Support Calls Distribution", val_calls), use_container_width=True)
+        
+    with chart_col2:
+        st.plotly_chart(create_strip_chart(plot_df, 'Age', "Age Distribution", val_age), use_container_width=True)
+        st.plotly_chart(create_stacked_bar(plot_df, 'Payment Delay', "Payment Delay (Days) Distribution", val_delay), use_container_width=True)
 else:
     # Empty state when no file is uploaded
     st.info("Upload a pipeline CSV file in the sidebar to begin your analysis")

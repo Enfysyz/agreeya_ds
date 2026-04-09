@@ -2,8 +2,8 @@
 import os
 import joblib
 import pandas as pd
-from feature_store import FeatureStore
-from model_pipeline import optimize_and_train
+from src.feature_store import FeatureStore
+from src.model_pipeline import optimize_and_train
 from sklearn.metrics import classification_report
 
 # Initialize Feature Store 

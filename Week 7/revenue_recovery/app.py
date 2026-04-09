@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.express as px
-from feature_store import FeatureStore
+from src.feature_store import FeatureStore
 import plotly.graph_objects as go
 
 # --- Page Configuration ---

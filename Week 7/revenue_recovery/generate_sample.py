@@ -13,6 +13,7 @@ df_master = pd.concat([df_train, df_test], axis=0)
 
 # Randomly sample 150 rows
 sample_df = df_master.sample(n=150)
+sample_df = sample_df.drop(columns=['Churn'])
 
 # Save to a new CSV
 OUTPUT_PATH = 'Week 7/revenue_recovery/data/sample_pipeline.csv'

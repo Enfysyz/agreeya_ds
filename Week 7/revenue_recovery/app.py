@@ -87,6 +87,10 @@ with st.sidebar:
 
 # --- Main Application Logic ---
 if uploaded_file is not None:
+    # Initialize session state for cross-tab communication
+    if 'active_customer' not in st.session_state:
+        st.session_state.active_customer = "None"
+
     # 1. Process Data
     input_df = pd.read_csv(uploaded_file).dropna()
     processed_df = input_df.copy()
@@ -162,7 +166,24 @@ if uploaded_file is not None:
         display_df['Probability of Churn'] = (display_df['Probability of Churn'] * 100).apply(lambda x: f"{x:.1f}%")
         display_df['Risk Amount'] = display_df['Risk Amount'].apply(lambda x: f"${x:,.2f}")
         
-        st.dataframe(display_df, use_container_width=True, hide_index=True, height=400)
+        # Updated Dataframe with Selection Tracking
+        event = st.dataframe(
+            display_df, 
+            use_container_width=True, 
+            hide_index=True, 
+            height=400,
+            on_select="rerun",           # Tells Streamlit to refresh when clicked
+            selection_mode="single-row"  # Only allow one row to be clicked at a time
+        )
+        
+        # If a row is clicked, save that Customer ID to session memory
+        if event.selection.rows:
+            selected_index = event.selection.rows[0]
+            selected_cust_id = display_df.iloc[selected_index]['CustomerID']
+            st.session_state.active_customer = int(selected_cust_id)
+            
+            # # Show a helpful popup so the user knows it worked
+            # st.success(f"✅ Customer {selected_cust_id} queued up! Click the **Customer Deep Dive** tab to view their profile.")
 
     # TAB 3: Customer Inspector
     with tab3:
@@ -170,7 +191,17 @@ if uploaded_file is not None:
         st.write("Select a customer from the dropdown to see how their metrics compare against the rest of the pipeline.")
         
         customer_options = ["None"] + results_df['CustomerID'].astype(int).sort_values().tolist()
-        selected_id = st.selectbox("Select Customer ID", customer_options)
+        
+        # Figure out where our saved customer is in the dropdown list
+        try:
+            default_index = customer_options.index(st.session_state.active_customer)
+        except ValueError:
+            default_index = 0
+            
+        selected_id = st.selectbox("Select Customer ID", customer_options, index=default_index)
+        
+        # Keep the session state updated if they manually use the dropdown instead of clicking the table
+        st.session_state.active_customer = selected_id
         
         plot_df = input_df.copy()
         plot_df['Status'] = results_df['Status'].values

@@ -132,13 +132,13 @@ if uploaded_file is not None:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total Accounts Evaluated", f"{total_tested:,}")
     c2.metric("Safe Accounts", f"{safe_accounts:,}")
-    c3.metric("Accounts at Risk", f"{at_risk:,}", delta=f"{(at_risk/total_tested)*100:.1f}% of pipeline", delta_color="inverse")
+    c3.metric("Accounts at Risk", f"{at_risk:,}", delta=f"{(at_risk/total_tested)*100:.1f}% of total customers", delta_color="inverse")
     c4.metric("Revenue at Risk", f"${risk_rev:,.0f}", delta=f"{risk_percentage:.1f}% of total LTV", delta_color="inverse")
 
     st.markdown("<br>", unsafe_allow_html=True) # Spacer
 
     # --- Tabbed Interface ---
-    tab1, tab2, tab3 = st.tabs(["📊 Pipeline Health", "🚨 Priority Action List", "🔍 Customer Deep Dive"])
+    tab1, tab2, tab3 = st.tabs(["Pipeline Health", "Priority Action List", "Customer Deep Dive"])
 
     # TAB 1: Overview Visuals
     with tab1:
@@ -314,7 +314,6 @@ else:
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.info("👋 **Welcome to the Revenue Recovery Hub**")
         st.markdown("""
         To begin your analysis, please upload your daily pipeline CSV via the sidebar menu. 
         """)

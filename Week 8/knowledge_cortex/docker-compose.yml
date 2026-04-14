@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_service
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Note: You will need to exec into this container to pull a model once it starts:
+    # docker exec -it ollama_service ollama pull llama3
+    # To use local GPU
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1  # Use 'all' if you have multiple GPUs and want to use them all
+              capabilities: [gpu]
+
+  backend:
+    build: ./backend
+    container_name: rag_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/docs:/app/docs  # Bind mount to easily drop files in from host
+      - backend_db:/app/chroma_db
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  frontend:
+    build: ./frontend
+    container_name: rag_frontend
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+
+volumes:
+  ollama_data:
+  backend_db:

@@ -14,11 +14,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 
 DOCS_DIR = "./docs"
-# Rename the DB directory so Chroma ignores the old HuggingFace vectors
 DB_DIR = "./chroma_db_ollama" 
 
 # Initialize local models
-# Swapped to Ollama Embeddings
 embeddings = OllamaEmbeddings(model="nomic-embed-text", base_url="http://ollama:11434")
 llm = Ollama(model="llama3", base_url="http://ollama:11434")
 

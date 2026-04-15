@@ -1,7 +1,6 @@
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-# Change this line:
 from src.rag_engine import ingest_documents
 
 class DocumentChangeHandler(FileSystemEventHandler):

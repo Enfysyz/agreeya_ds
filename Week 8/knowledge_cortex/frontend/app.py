@@ -3,7 +3,6 @@ import requests
 
 st.set_page_config(page_title="Local RAG Explorer", layout="wide")
 st.title("Local Hybrid RAG Engine")
-st.markdown("Powered by Ollama, BM25, Dense Vectors, and Cross-Encoder Re-ranking.")
 
 API_URL = "http://backend:8000/query"
 

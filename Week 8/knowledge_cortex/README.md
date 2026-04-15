@@ -1,0 +1,61 @@
+# Folder Structure
+```
+KNOWLEDGE_CORTEX/
+├── backend/
+│   ├── docs/                   # 📄 DROP YOUR PDFS HERE
+│   ├── src/
+│   │   ├── main.py             # FastAPI entry point
+│   │   ├── rag_engine.py       # LangChain setup, Hybrid Search, & Re-ranking
+│   │   └── watcher.py          # Background service for auto-indexing
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── app.py                  # Streamlit UI
+│   ├── Dockerfile
+│   └── requirements.txt
+├── docker-compose.yml          # Orchestrates Backend, Frontend, and Ollama
+└── README.md
+```
+
+# Prerequisites
+- Docker & Docker Compose
+- NVIDIA Container Toolkit (optional)
+
+# Start container
+```
+docker-compose up --build -d
+```
+
+# Download Ollama models
+```
+# Pull the generation model
+docker exec -it ollama_service ollama pull llama3
+
+# Pull the embedding model
+docker exec -it ollama_service ollama pull nomic-embed-text
+```
+
+# API reference
+
+## POST /query
+Ask a question against your indexed documents.
+
+**Request body** 
+```
+{
+  "query": "Your question here?"
+}
+```
+
+**Response Body**
+```
+{
+  "answer": "The generated answer based on your documents.",
+  "citations": [
+    {
+      "source": "backend/docs/filename.pdf",
+      "content": "The specific text chunk used to generate the answer..."
+    }
+  ]
+}
+```

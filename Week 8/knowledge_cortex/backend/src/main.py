@@ -1,9 +1,8 @@
 import threading
 from fastapi import FastAPI
 from pydantic import BaseModel
-# Change these lines:
+from src.rag_engine import ask_with_transparency, get_indexed_files
 from src.watcher import start_watcher
-from src.rag_engine import ask_with_transparency
 
 app = FastAPI(title="Local RAG API")
 
@@ -47,4 +46,12 @@ def ask_question(req: QueryRequest):
         "answer": result["answer"], 
         "citations": citations,
         "retrieval_transparency": all_retrieved
+    }
+
+@app.get("/files")
+def list_indexed_files():
+    files = get_indexed_files()
+    return {
+        "total_files": len(files),
+        "indexed_files": files
     }

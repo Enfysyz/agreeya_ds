@@ -99,3 +99,20 @@ def ask_with_transparency(query: str):
         "citations": top_3_docs,           # The 3 used by the LLM
         "all_retrieved_docs": raw_docs     # All 10 found by Hybrid Search
     }
+
+def get_indexed_files():
+    """Returns a list of all unique files currently inside the Vector Database."""
+    if vectorstore is None:
+        return []
+    
+    # .get() pulls data directly from the underlying Chroma collection
+    # We only request 'metadatas' to save memory and speed
+    collection_data = vectorstore.get(include=['metadatas'])
+    metadatas = collection_data.get('metadatas', [])
+    
+    unique_sources = set()
+    for meta in metadatas:
+        if meta and "source" in meta:
+            unique_sources.add(meta["source"])
+            
+    return list(unique_sources)

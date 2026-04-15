@@ -1,5 +1,5 @@
 import time
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler
 from src.rag_engine import ingest_documents
 
@@ -16,10 +16,12 @@ class DocumentChangeHandler(FileSystemEventHandler):
 
 def start_watcher():
     event_handler = DocumentChangeHandler()
-    observer = Observer()
+    
+    observer = PollingObserver() 
+    
     observer.schedule(event_handler, path='./docs', recursive=True)
     observer.start()
-    print("Document watcher started on ./docs...")
+    print("Document watcher started on ./docs (Polling Mode)...")
     try:
         while True:
             time.sleep(1)

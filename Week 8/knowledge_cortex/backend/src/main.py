@@ -2,8 +2,8 @@ import threading
 from fastapi import FastAPI
 from pydantic import BaseModel
 # Change these lines:
-from src.rag_engine import get_rag_chain
 from src.watcher import start_watcher
+from src.rag_engine import ask_with_transparency
 
 app = FastAPI(title="Local RAG API")
 
@@ -18,12 +18,33 @@ def startup_event():
 
 @app.post("/query")
 def ask_question(req: QueryRequest):
-    chain = get_rag_chain()
-    response = chain.invoke({"input": req.query})
+    # Call our new transparent engine
+    result = ask_with_transparency(req.query)
     
-    # Extract answer and citations
-    answer = response["answer"]
-    sources = [{"source": doc.metadata.get("source"), "content": doc.page_content[:200] + "..."} 
-               for doc in response["context"]]
+    # Format the 3 documents used for the answer
+    citations = [
+        {
+            "source": doc.metadata.get("source"),
+            "page": doc.metadata.get("page"),
+            "score": round(doc.metadata.get("rerank_score", 0), 4),
+            "content": doc.page_content
+        } 
+        for doc in result["citations"]
+    ]
     
-    return {"answer": answer, "citations": sources}
+    # Format the full 10 documents retrieved by hybrid search
+    all_retrieved = [
+        {
+            "source": doc.metadata.get("source"),
+            "page": doc.metadata.get("page"),
+            "score": round(doc.metadata.get("rerank_score", 0), 4),
+            "content": doc.page_content
+        } 
+        for doc in result["all_retrieved_docs"]
+    ]
+    
+    return {
+        "answer": result["answer"], 
+        "citations": citations,
+        "retrieval_transparency": all_retrieved
+    }

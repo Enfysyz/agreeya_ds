@@ -2,12 +2,9 @@ import os
 from langchain_chroma import Chroma
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers import EnsembleRetriever
-from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
 from langchain_ollama import OllamaEmbeddings  
 from langchain_community.llms import Ollama
-from langchain_classic.chains import create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -20,7 +17,6 @@ embeddings = OllamaEmbeddings(model="nomic-embed-text", base_url="http://ollama:
 llm = Ollama(model="llama3", base_url="http://ollama:11434")
 
 cross_encoder = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
-compressor = CrossEncoderReranker(model=cross_encoder, top_n=3)
 
 vectorstore = None
 bm25_retriever = None
@@ -41,19 +37,15 @@ def ingest_documents():
 
     for split in splits:
         clean_metadata = {}
-        # Only keep the exact two fields we need for citations, force them to clean types
         if "source" in split.metadata:
             clean_metadata["source"] = str(split.metadata["source"])
         if "page" in split.metadata:
             clean_metadata["page"] = int(split.metadata["page"])
             
-        # Overwrite the dirty PDF metadata with our clean dictionary
         split.metadata = clean_metadata
     
-    # Update Dense Vector Store (Chroma)
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings, persist_directory=DB_DIR)
     
-    # Update Sparse Store (BM25)
     bm25_retriever = BM25Retriever.from_documents(splits)
     bm25_retriever.k = 5
     
@@ -61,7 +53,8 @@ def ingest_documents():
 
 ingest_documents()
 
-def get_rag_chain():
+# --- NEW TRANSPARENT FUNCTION ---
+def ask_with_transparency(query: str):
     if vectorstore is None or bm25_retriever is None:
         raise ValueError("No documents are currently indexed.")
         
@@ -71,10 +64,23 @@ def get_rag_chain():
         retrievers=[bm25_retriever, vector_retriever], weights=[0.5, 0.5]
     )
     
-    compression_retriever = ContextualCompressionRetriever(
-        base_compressor=compressor, base_retriever=ensemble_retriever
-    )
+    # 1. Fetch Top 10 Raw Documents (5 BM25 + 5 Vector)
+    raw_docs = ensemble_retriever.invoke(query)
     
+    # 2. Manually Score all 10 using the Cross-Encoder
+    text_pairs = [[query, doc.page_content] for doc in raw_docs]
+    scores = cross_encoder.score(text_pairs)
+    
+    # 3. Attach the scores to the documents and sort them (Highest to Lowest)
+    for doc, score in zip(raw_docs, scores):
+        doc.metadata["rerank_score"] = float(score)
+        
+    raw_docs.sort(key=lambda x: x.metadata["rerank_score"], reverse=True)
+    
+    # 4. Slice the Top 3 to use as the actual context for the LLM
+    top_3_docs = raw_docs[:3]
+    
+    # 5. Generate the Answer
     prompt = ChatPromptTemplate.from_template("""
     Answer the following question based only on the provided context. 
     If the answer is not in the context, say "I don't know based on the provided documents."
@@ -86,6 +92,10 @@ def get_rag_chain():
     """)
     
     document_chain = create_stuff_documents_chain(llm, prompt)
-    retrieval_chain = create_retrieval_chain(compression_retriever, document_chain)
+    answer = document_chain.invoke({"context": top_3_docs, "input": query})
     
-    return retrieval_chain
+    return {
+        "answer": answer,
+        "citations": top_3_docs,           # The 3 used by the LLM
+        "all_retrieved_docs": raw_docs     # All 10 found by Hybrid Search
+    }

@@ -26,6 +26,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/docs:/app/docs  # Bind mount to easily drop files in from host
+      - ./backend/src:/app/src
       - backend_db:/app/chroma_db
     depends_on:
       - ollama

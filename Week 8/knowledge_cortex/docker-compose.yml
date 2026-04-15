@@ -27,11 +27,12 @@ services:
     volumes:
       - ./backend/docs:/app/docs  # Bind mount to easily drop files in from host
       - ./backend/src:/app/src
-      - backend_db:/app/chroma_db
+      - ./backend/chroma_db:/app/chroma_db
     depends_on:
       - ollama
     environment:
       - OLLAMA_HOST=http://ollama:11434
+      - PYTHONUNBUFFERED=1
 
   frontend:
     build: ./frontend

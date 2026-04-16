@@ -15,8 +15,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { CitationsPanel } from "@/components/CitationsPanel";
 import { FilesPanel } from "@/components/FilesPanel";
 import { queryDocuments, getIndexedFiles } from "@/lib/api";
-import type { Message } from "@/components/ChatMessage";
-import type { Citation } from "@/lib/api";
+import type { Message, CitationsPanelData } from "@/components/ChatMessage";
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -24,7 +23,7 @@ function App() {
   const [isQuerying, setIsQuerying] = useState(false);
 
   // Citations panel state
-  const [activeCitations, setActiveCitations] = useState<Citation[]>([]);
+  const [activeCitationsData, setActiveCitationsData] = useState<CitationsPanelData>({ all: [], used: [] });
   const [citationsOpen, setCitationsOpen] = useState(false);
 
   // Files panel state
@@ -44,8 +43,8 @@ function App() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const handleViewCitations = (citations: Citation[]) => {
-    setActiveCitations(citations);
+  const handleViewCitations = (data: CitationsPanelData) => {
+    setActiveCitationsData(data);
     setCitationsOpen(true);
     setFilesOpen(false);
   };
@@ -89,20 +88,16 @@ function App() {
 
     try {
       const response = await queryDocuments(query);
+      // retrieval_transparency contains ALL retrieved chunks; citations = top 3 used
+      const allCitations = response.retrieval_transparency ?? [];
+      const usedCitations = response.citations ?? [];
       const assistantMessage: Message = {
         id: (Date.now() + 2).toString(),
         role: "assistant",
         content: response.answer,
-        citations: response.citations,
+        citationsData: { all: allCitations, used: usedCitations },
       };
       setMessages((prev) => [...prev.slice(0, -1), assistantMessage]);
-
-      // Auto-open citations if we have them
-      if (response.citations.length > 0) {
-        setActiveCitations(response.citations);
-        setCitationsOpen(true);
-        setFilesOpen(false);
-      }
     } catch (err) {
       const errorMessage: Message = {
         id: (Date.now() + 2).toString(),
@@ -130,8 +125,8 @@ function App() {
       <header className="flex-shrink-0 border-b border-border bg-card/50 backdrop-blur-md px-6 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/80 to-accent/80 flex items-center justify-center pulse-glow">
-              <Brain className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Brain className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h1 className="text-sm font-bold tracking-tight">
@@ -162,7 +157,7 @@ function App() {
           /* Empty State */
           <div className="h-full flex flex-col items-center justify-center px-6">
             <div className="max-w-lg text-center space-y-6">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-2">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center mb-2">
                 <Sparkles className="w-8 h-8 text-primary" />
               </div>
               <div>
@@ -262,7 +257,8 @@ function App() {
 
       {/* Side Panels */}
       <CitationsPanel
-        citations={activeCitations}
+        allCitations={activeCitationsData.all}
+        usedCitations={activeCitationsData.used}
         isOpen={citationsOpen}
         onClose={() => setCitationsOpen(false)}
       />

@@ -3,21 +3,27 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, User } from "lucide-react";
 import type { Citation } from "@/lib/api";
 
+export interface CitationsPanelData {
+  all: Citation[];
+  used: Citation[];
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  citations?: Citation[];
+  citationsData?: CitationsPanelData;
   isLoading?: boolean;
 }
 
 interface ChatMessageProps {
   message: Message;
-  onViewCitations?: (citations: Citation[]) => void;
+  onViewCitations?: (data: CitationsPanelData) => void;
 }
 
 export function ChatMessage({ message, onViewCitations }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const totalCitations = message.citationsData?.all.length ?? 0;
 
   return (
     <div
@@ -26,17 +32,17 @@ export function ChatMessage({ message, onViewCitations }: ChatMessageProps) {
       }`}
     >
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mt-1">
+        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center mt-1">
           <Brain className="w-4 h-4 text-primary" />
         </div>
       )}
 
       <div className={`max-w-[75%] ${isUser ? "order-first" : ""}`}>
         <Card
-          className={`border-0 shadow-none ${
+          className={`border shadow-none ${
             isUser
-              ? "bg-primary/15 border border-primary/20"
-              : "bg-card"
+              ? "bg-primary/8 border-primary/20"
+              : "bg-card border-border"
           }`}
         >
           <CardContent className="p-4">
@@ -56,20 +62,19 @@ export function ChatMessage({ message, onViewCitations }: ChatMessageProps) {
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
                   {message.content}
                 </p>
-                {message.citations && message.citations.length > 0 && (
+                {message.citationsData && totalCitations > 0 && (
                   <button
-                    onClick={() => onViewCitations?.(message.citations!)}
+                    onClick={() => onViewCitations?.(message.citationsData!)}
                     className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
                   >
                     <Badge
                       variant="secondary"
                       className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs px-2 py-0.5"
                     >
-                      {message.citations.length} citation
-                      {message.citations.length > 1 ? "s" : ""}
+                      {totalCitations} source{totalCitations > 1 ? "s" : ""}
                     </Badge>
                     <span className="text-muted-foreground">
-                      — Click to view sources
+                      — Click to view citations
                     </span>
                   </button>
                 )}
@@ -80,7 +85,7 @@ export function ChatMessage({ message, onViewCitations }: ChatMessageProps) {
       </div>
 
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center mt-1">
+        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary border border-border flex items-center justify-center mt-1">
           <User className="w-4 h-4 text-secondary-foreground" />
         </div>
       )}

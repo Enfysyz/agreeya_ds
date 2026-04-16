@@ -56,6 +56,13 @@ Ask a question against your indexed documents.
       "source": "backend/docs/filename.pdf",
       "content": "The specific text chunk used to generate the answer..."
     }
+    "retrieval_transparency": [
+        {
+            "source": "file_path",
+            "page": 1,
+            "score": 0.0263,
+            "content": "text from source document"
+        }
   ]
 }
 ```

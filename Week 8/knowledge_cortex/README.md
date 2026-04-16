@@ -59,3 +59,17 @@ Ask a question against your indexed documents.
   ]
 }
 ```
+
+## POST /files
+List down the files in the backend/docs folder.
+
+**Response Body**
+```
+{
+  "total_files": 2,
+  "indexed_files": [
+    "backend/docs/file1.pdf",
+    "backend/docs/file2.pdf"
+  ]
+}
+```

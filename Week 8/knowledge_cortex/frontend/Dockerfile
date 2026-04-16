@@ -1,6 +1,12 @@
-FROM python:3.10-slim
+FROM node:20-alpine
+
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+COPY package*.json ./
+RUN npm install
+
 COPY . .
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev"]

@@ -1,26 +1,34 @@
 import threading
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware # <-- NEW IMPORT
 from pydantic import BaseModel
 from src.rag_engine import ask_with_transparency, get_indexed_files
 from src.watcher import start_watcher
 
 app = FastAPI(title="Local RAG API")
 
+# --- NEW: ENABLE CORS ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, change this to your frontend URL (e.g., "http://localhost:5173")
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# ------------------------
+
 class QueryRequest(BaseModel):
     query: str
 
 @app.on_event("startup")
 def startup_event():
-    # Start the document watcher in a background thread
     watcher_thread = threading.Thread(target=start_watcher, daemon=True)
     watcher_thread.start()
 
 @app.post("/query")
 def ask_question(req: QueryRequest):
-    # Call our new transparent engine
     result = ask_with_transparency(req.query)
     
-    # Format the 3 documents used for the answer
     citations = [
         {
             "source": doc.metadata.get("source"),
@@ -31,7 +39,6 @@ def ask_question(req: QueryRequest):
         for doc in result["citations"]
     ]
     
-    # Format the full 10 documents retrieved by hybrid search
     all_retrieved = [
         {
             "source": doc.metadata.get("source"),

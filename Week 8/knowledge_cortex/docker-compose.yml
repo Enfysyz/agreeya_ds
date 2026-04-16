@@ -38,10 +38,12 @@ services:
     build: ./frontend
     container_name: rag_frontend
     ports:
-      - "8501:8501"
+      - "5173:5173"           # Changed from Streamlit's 8501 to Vite's 5173
+    volumes:
+      - ./frontend:/app       # Hot-reloading for your React code!
+      - /app/node_modules     # Prevents local node_modules from overwriting container's
     depends_on:
       - backend
-
 volumes:
   ollama_data:
   backend_db:

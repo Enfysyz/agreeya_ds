@@ -51,11 +51,11 @@ Ask a question against your indexed documents.
 ```
 {
   "answer": "The generated answer based on your documents.",
-  "citations": [
+  "citations": 
     {
       "source": "backend/docs/filename.pdf",
       "content": "The specific text chunk used to generate the answer..."
-    }
+    },
     "retrieval_transparency": [
         {
             "source": "file_path",

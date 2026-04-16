@@ -148,7 +148,7 @@ export function CitationsPanel({
                                 variant="outline"
                                 className="text-[10px] px-1.5 py-0 h-5 border-border text-muted-foreground"
                               >
-                                p.{citation.page}
+                                Page {citation.page + 1}
                               </Badge>
                             )}
                             {citation.score > 0 && (

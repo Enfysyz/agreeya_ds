@@ -33,6 +33,11 @@ def generate_sql(state: AgentState):
         META-QUESTIONS RULE:
         If the user asks about the database structure itself (e.g., "What tables exist?", "Name the tables", "What columns are in customers?"), DO NOT write a SQL query. You already have the schema below. Return an empty string "" for the sql key.
 
+        NO MAGIC IDS RULE:
+        Do NOT guess or hardcode integer IDs (like ShipperID, CategoryID, etc.) based on text names in the prompt. You must ALWAYS use a JOIN or a subquery to filter by text names dynamically.
+        Correct: ... JOIN "shippers" s ON o."ShipVia" = s."ShipperID" WHERE s."CompanyName" ILIKE '%UPS%'
+        Wrong: ... WHERE o."ShipVia" = 3
+
         EXAMPLE OUTPUT FOR DATA QUERY:
         {{"sql": "SELECT c.\\"Country\\", c.\\"CompanyName\\" FROM \\"customers\\" c ORDER BY c.\\"Country\\""}}
 

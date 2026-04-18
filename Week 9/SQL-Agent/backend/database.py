@@ -1,3 +1,4 @@
+import re
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -8,11 +9,10 @@ DATABASE_URL = "postgresql://postgres:secretpassword@db:5432/northwind"
 engine = create_engine(DATABASE_URL)
 
 def get_database_schema() -> str:
-    """Fetches all table names and their column definitions."""
+    """Fetches all table names and their column definitions, formatted for strict PostgreSQL."""
     schema_info = ""
     try:
         with engine.connect() as conn:
-            # Query to get all tables in the public schema
             tables_query = text("""
                 SELECT table_name 
                 FROM information_schema.tables 
@@ -22,39 +22,47 @@ def get_database_schema() -> str:
             
             for table in tables:
                 table_name = table[0]
-                schema_info += f"Table: {table_name}\n"
+                # INJECT QUOTES HERE
+                schema_info += f'Table: "{table_name}"\n'
                 
-                # Query to get columns for each table
-                columns_query = text(f"""
+                columns_query = text("""
                     SELECT column_name, data_type 
                     FROM information_schema.columns 
-                    WHERE table_name = '{table_name}'
+                    WHERE table_name = :tname
                 """)
-                columns = conn.execute(columns_query).fetchall()
+                columns = conn.execute(columns_query, {"tname": table_name}).fetchall()
+                
                 for col in columns:
-                    schema_info += f"  - {col[0]} ({col[1]})\n"
+                    # INJECT QUOTES HERE
+                    schema_info += f'  - "{col[0]}" ({col[1]})\n'
                 schema_info += "\n"
+                
         return schema_info
     except Exception as e:
         return f"Error fetching schema: {str(e)}"
 
 def execute_read_only_query(sql_query: str) -> dict:
-    """Safely executes a query, blocking modifications."""
+    """Safely executes a query, forcing quotes and blocking modifications."""
     
-    # Very basic Guardrail: Block destructive commands
+    # 1. The Regex Sledgehammer (Force Quotes on Aliases)
+    # This specifically finds patterns like c.Country and forces c."Country"
+    safe_sql = re.sub(
+        r'(?<!")\b([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)\b(?!")', 
+        r'\1."\2"', 
+        sql_query
+    )
+    
+    # 2. Security Guardrail
     forbidden_keywords = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE"]
-    upper_query = sql_query.upper()
-    if any(keyword in upper_query for keyword in forbidden_keywords):
+    if any(keyword in safe_sql.upper() for keyword in forbidden_keywords):
         return {"error": "Security Violation: Only SELECT queries are allowed."}
 
+    # 3. Execution
     try:
         with engine.connect() as conn:
-            result = conn.execute(text(sql_query))
-            # Fetch column names
+            result = conn.execute(text(safe_sql))
             keys = result.keys()
-            # Fetch data rows and convert to list of dicts
             data = [dict(zip(keys, row)) for row in result.fetchall()]
             return {"data": data}
     except SQLAlchemyError as e:
-        # Return the exact DB error so LangGraph can pass it back to the LLM to fix
         return {"error": str(e)}

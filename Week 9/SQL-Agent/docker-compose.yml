@@ -35,11 +35,16 @@ services:
   backend:
     build: ./backend
     container_name: sql_agent_backend
+    environment:
+      - PYTHONUNBUFFERED=1  # <--- ADD THIS
     ports:
       - "8000:8000"
     depends_on:
       - db
       - ollama
+    # For testing, remove for production
+    # volumes:
+    #   - ./backend:/app
 
 volumes:
   ollama_data:

@@ -28,7 +28,8 @@ async def chat_endpoint(request: ChatRequest):
             "sql_query": "",
             "agent_reply": "",
             "error": "",
-            "data": {}
+            "data": {},
+            "retry_count": 0
         }
         
         final_state = agent_app.invoke(initial_state) 

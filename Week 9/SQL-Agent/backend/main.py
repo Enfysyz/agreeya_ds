@@ -23,21 +23,21 @@ def get_schema():
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
-        # Initialize the state with the user's question
         initial_state = {
             "messages": [HumanMessage(content=request.message)],
             "sql_query": "",
+            "agent_reply": "",
             "error": "",
             "data": {}
         }
         
-        # Run the LangGraph agent
-        final_state = agent_app.invoke(initial_state)
+        final_state = agent_app.invoke(initial_state) 
         
         return {
-            "reply": "Here is the data you requested.",
-            "sql_generated": final_state["sql_query"],
-            "data_result": final_state["data"]
+            # Now we return the actual LLM's conversational text!
+            "reply": final_state.get("agent_reply", ""),
+            "sql_generated": final_state.get("sql_query", ""),
+            "data_result": final_state.get("data", {})
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

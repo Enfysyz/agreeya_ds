@@ -5,6 +5,8 @@ import database
 from langchain_core.messages import HumanMessage
 from agent import agent_app
 
+import uuid # Add this at the top
+
 app = FastAPI(title="Analyst-in-the-Loop SQL Agent API")
 
 class ChatRequest(BaseModel):
@@ -22,6 +24,9 @@ def get_schema():
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
+    request_id = str(uuid.uuid4())[:8] # Create a short unique ID
+    print(f"\n>>> STARTING REQUEST [{request_id}] for: {request.message}\n")
+    
     try:
         initial_state = {
             "messages": [HumanMessage(content=request.message)],
@@ -34,11 +39,13 @@ async def chat_endpoint(request: ChatRequest):
         
         final_state = agent_app.invoke(initial_state) 
         
+        print(f"\n<<< FINISHED REQUEST [{request_id}]\n")
+        
         return {
-            # Now we return the actual LLM's conversational text!
             "reply": final_state.get("agent_reply", ""),
             "sql_generated": final_state.get("sql_query", ""),
             "data_result": final_state.get("data", {})
         }
     except Exception as e:
+        print(f"!!! ERROR IN REQUEST [{request_id}]: {e}")
         raise HTTPException(status_code=500, detail=str(e))

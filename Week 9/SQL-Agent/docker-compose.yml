@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secretpassword
       POSTGRES_DB: northwind
+    ports:
+      - "5432:5432"
 
     volumes:
       - ./db_init:/docker-entrypoint-initdb.d
@@ -43,8 +45,8 @@ services:
       - db
       - ollama
     # For testing, remove for production
-    # volumes:
-    #   - ./backend:/app
+    volumes:
+      - ./backend:/app
 
 volumes:
   ollama_data:

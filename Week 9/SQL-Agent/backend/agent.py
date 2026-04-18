@@ -23,25 +23,25 @@ def generate_sql(state: AgentState):
     error = state.get("error", "")
     
     system_prompt = f"""You are an expert PostgreSQL data analyst.
-You MUST respond in valid JSON format with exactly one key: "sql".
-- "sql": The raw PostgreSQL query to execute. 
+        You MUST respond in valid JSON format with exactly one key: "sql".
+        - "sql": The raw PostgreSQL query to execute. 
 
-CRITICAL POSTGRESQL RULE:
-You MUST copy the exact double-quoted table and column names from the schema below.
-If you use table aliases, the quotes ONLY go around the column name, not the alias.
+        CRITICAL POSTGRESQL RULE:
+        You MUST copy the exact double-quoted table and column names from the schema below.
+        If you use table aliases, the quotes ONLY go around the column name, not the alias.
 
-META-QUESTIONS RULE:
-If the user asks about the database structure itself (e.g., "What tables exist?", "Name the tables", "What columns are in customers?"), DO NOT write a SQL query. You already have the schema below. Return an empty string "" for the sql key.
+        META-QUESTIONS RULE:
+        If the user asks about the database structure itself (e.g., "What tables exist?", "Name the tables", "What columns are in customers?"), DO NOT write a SQL query. You already have the schema below. Return an empty string "" for the sql key.
 
-EXAMPLE OUTPUT FOR DATA QUERY:
-{{"sql": "SELECT c.\\"Country\\", c.\\"CompanyName\\" FROM \\"customers\\" c ORDER BY c.\\"Country\\""}}
+        EXAMPLE OUTPUT FOR DATA QUERY:
+        {{"sql": "SELECT c.\\"Country\\", c.\\"CompanyName\\" FROM \\"customers\\" c ORDER BY c.\\"Country\\""}}
 
-EXAMPLE OUTPUT FOR META-QUESTION:
-{{"sql": ""}}
+        EXAMPLE OUTPUT FOR META-QUESTION:
+        {{"sql": ""}}
 
-Here is the database schema:
-{schema}
-"""
+        Here is the database schema:
+        {schema}
+        """
     if error:
         system_prompt += f"\nURGENT: Your last SQL query failed with this error: {error}\nRewrite the SQL to fix it. Make sure you are using double quotes around ALL column names."
 
@@ -90,13 +90,13 @@ def generate_reply(state: AgentState):
     db_data = state.get("data", {})
 
     system_prompt = f"""You are the final response agent for a data analytics platform.
-User asked: {user_query}
-SQL Executed: {sql_query}
-# ADD default=str RIGHT HERE:
-Data Retrieved: {json.dumps(db_data, default=str)}
+        User asked: {user_query}
+        SQL Executed: {sql_query}
+        # ADD default=str RIGHT HERE:
+        Data Retrieved: {json.dumps(db_data, default=str)}
 
-Write the final response directly to the user. Do not include markdown code blocks. 
-CRITICAL RULE: If the user asked for specific data and 'Data Retrieved' is empty, you MUST explicitly state that no data was found. DO NOT make up names, numbers, or facts."""
+        Write the final response directly to the user. Do not include markdown code blocks. 
+        CRITICAL RULE: If the user asked for specific data and 'Data Retrieved' is empty, you MUST explicitly state that no data was found. DO NOT make up names, numbers, or facts."""
 
     response = llm_chat_mode.invoke([SystemMessage(content=system_prompt)])
     return {"agent_reply": response.content}

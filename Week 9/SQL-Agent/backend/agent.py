@@ -79,6 +79,7 @@ def execute_sql(state: AgentState):
     else:
         return {"data": result["data"], "error": "", "retry_count": 0}
 
+# --- NODE 3: Formulate Final Reply ---
 def generate_reply(state: AgentState):
     if state.get("error") and state.get("retry_count", 0) >= 3:
         return {"agent_reply": f"I'm sorry, I failed to generate a valid SQL query after 3 attempts. The database returned this error: {state.get('error')}"}
@@ -91,7 +92,8 @@ def generate_reply(state: AgentState):
     system_prompt = f"""You are the final response agent for a data analytics platform.
 User asked: {user_query}
 SQL Executed: {sql_query}
-Data Retrieved: {json.dumps(db_data)}
+# ADD default=str RIGHT HERE:
+Data Retrieved: {json.dumps(db_data, default=str)}
 
 Write the final response directly to the user. Do not include markdown code blocks. 
 CRITICAL RULE: If the user asked for specific data and 'Data Retrieved' is empty, you MUST explicitly state that no data was found. DO NOT make up names, numbers, or facts."""

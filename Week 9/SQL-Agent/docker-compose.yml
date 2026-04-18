@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # 1. The PostgreSQL Database
   db:
     image: postgres:15-alpine
     container_name: mock_postgres_db
@@ -8,12 +9,29 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secretpassword
       POSTGRES_DB: northwind
-    
+
     volumes:
-      # Tells Postgres to run script on the very first startup
       - ./db_init:/docker-entrypoint-initdb.d
     restart: unless-stopped
 
+  # 2. The Ollama AI Engine
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_service
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # GPU Support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # 3. The LangGraph Backend
   backend:
     build: ./backend
     container_name: sql_agent_backend
@@ -21,7 +39,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
-    # If Ollama is running locally on your Mac/Windows host, this allows 
-    # the docker container to talk to localhost:11434
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ollama
+
+volumes:
+  ollama_data:

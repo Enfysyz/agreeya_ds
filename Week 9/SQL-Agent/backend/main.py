@@ -2,6 +2,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import database
 
+from langchain_core.messages import HumanMessage
+from agent import agent_app
+
 app = FastAPI(title="Analyst-in-the-Loop SQL Agent API")
 
 class ChatRequest(BaseModel):
@@ -19,10 +22,22 @@ def get_schema():
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
-    # TODO: Connect this to the LangGraph Agent workflow
-    # For now, we will just return a placeholder
-    return {
-        "reply": "I received your message. LangGraph agent is not yet wired up.",
-        "sql_generated": None,
-        "data_result": None
-    }
+    try:
+        # Initialize the state with the user's question
+        initial_state = {
+            "messages": [HumanMessage(content=request.message)],
+            "sql_query": "",
+            "error": "",
+            "data": {}
+        }
+        
+        # Run the LangGraph agent
+        final_state = agent_app.invoke(initial_state)
+        
+        return {
+            "reply": "Here is the data you requested.",
+            "sql_generated": final_state["sql_query"],
+            "data_result": final_state["data"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

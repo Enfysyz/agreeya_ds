@@ -92,16 +92,25 @@ def generate_reply(state: AgentState):
     messages = state.get("messages", [])
     user_query = messages[-1].content if messages else ""
     sql_query = state.get("sql_query", "")
-    db_data = state.get("data", {})
+    db_data = state.get("data", [])
 
+    # 1. THE ENGINEERING FIX: Truncate data to save LLM tokens
+    total_rows = len(db_data) if isinstance(db_data, list) else 0
+    preview_data = db_data[:5] if isinstance(db_data, list) else db_data
+
+    # 2. THE PROMPT FIX: Instruct the LLM to act like a dashboard assistant
     system_prompt = f"""You are the final response agent for a data analytics platform.
         User asked: {user_query}
         SQL Executed: {sql_query}
-        # ADD default=str RIGHT HERE:
-        Data Retrieved: {json.dumps(db_data, default=str)}
+        Total Rows Found: {total_rows}
+        Data Preview (First 5 rows): {json.dumps(preview_data, default=str)}
 
         Write the final response directly to the user. Do not include markdown code blocks. 
-        CRITICAL RULE: If the user asked for specific data and 'Data Retrieved' is empty, you MUST explicitly state that no data was found. DO NOT make up names, numbers, or facts."""
+
+        CRITICAL RULES:
+        1. If 'Total Rows Found' is 0, explicitly state that no data was found. DO NOT hallucinate.
+        2. DO NOT regurgitate or list the data rows in your text reply. The frontend UI will display the raw data in a visual table automatically.
+        3. Keep your reply incredibly brief and conversational. Just confirm what you found (e.g., "I found {total_rows} customers matching your request. Here is the data:")."""
 
     response = llm_chat_mode.invoke([SystemMessage(content=system_prompt)])
     return {"agent_reply": response.content}

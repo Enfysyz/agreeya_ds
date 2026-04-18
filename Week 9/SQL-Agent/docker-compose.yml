@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mock_postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: northwind
+    
+    volumes:
+      # Tells Postgres to run script on the very first startup
+      - ./db_init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: sql_agent_backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    # If Ollama is running locally on your Mac/Windows host, this allows 
+    # the docker container to talk to localhost:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

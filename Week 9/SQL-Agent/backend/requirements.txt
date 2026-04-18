@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langchain
+langgraph
+langchain-community
+sqlalchemy
+psycopg2-binary
+sqlglot
+pydantic

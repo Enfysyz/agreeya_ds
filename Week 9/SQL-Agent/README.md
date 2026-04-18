@@ -52,8 +52,23 @@ The main entry point for queries.
     }
     ```
 
----
-
+## Frontend Architecture
+```
+frontend/
+├── src/
+│   ├── api.ts                    # API client (GET /api/schema, POST /api/chat)
+│   ├── types.ts                  # TypeScript interfaces
+│   ├── App.tsx                   # Main layout: sidebar + chat + input
+│   ├── index.css                 # ShadCN light theme with custom styling
+│   ├── utils/
+│   │   └── parseSchema.ts        # Schema string → structured table/column objects
+│   └── components/
+│       ├── SchemaPanel.tsx        # Collapsible database schema sidebar
+│       ├── ChatMessage.tsx        # User/assistant message bubbles
+│       ├── ChatInput.tsx          # Input bar with suggestion chips
+│       ├── SqlCodeBlock.tsx       # Syntax-highlighted SQL with copy button
+│       └── DataTable.tsx          # Paginated results table with CSV export
+```
 ## 🛡️ Security & Reliability Features
 
 * **Read-Only Enforcement**: The system uses a manual keyword check (`DROP`, `INSERT`, etc.) to prevent database modification.

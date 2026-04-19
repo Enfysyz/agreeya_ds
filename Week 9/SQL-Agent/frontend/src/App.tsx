@@ -119,10 +119,10 @@ function App() {
             </div>
             <div>
               <h1 className="text-sm font-semibold tracking-tight">
-                SQL Agent
+                QueryPilot
               </h1>
               <p className="text-[11px] text-muted-foreground leading-none">
-                Natural language → SQL • Northwind Database
+                Natural language → SQL 
               </p>
             </div>
           </div>

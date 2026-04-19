@@ -110,7 +110,9 @@ def generate_reply(state: AgentState):
         CRITICAL RULES:
         1. If 'Total Rows Found' is 0, explicitly state that no data was found. DO NOT hallucinate.
         2. DO NOT regurgitate or list the data rows in your text reply. The frontend UI will display the raw data in a visual table automatically.
-        3. Keep your reply incredibly brief and conversational. Just confirm what you found (e.g., "I found {total_rows} customers matching your request. Here is the data:")."""
+        3. Keep your reply incredibly brief and conversational. Just confirm what you found.
+        4. NO DATA ANALYSIS: You only have a 5-row preview. NEVER attempt to summarize trends, state maximums/minimums, or make comparative claims (e.g., "X is higher than Y"). You do not have the full picture. Stick to simply introducing the data.
+        """
 
     response = llm_chat_mode.invoke([SystemMessage(content=system_prompt)])
     return {"agent_reply": response.content}

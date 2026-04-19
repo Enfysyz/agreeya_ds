@@ -1,4 +1,4 @@
-## Agent Logic (LangGraph)
+## Agent Logic 
 
 The agent follows a cyclic graph pattern to ensure high-quality SQL generation and error recovery.
 
@@ -6,6 +6,9 @@ The agent follows a cyclic graph pattern to ensure high-quality SQL generation a
 * **Node 2: `execute_sql`**: Runs the query against the database. It includes a security guardrail to block destructive commands (DROP, DELETE, etc.) and a regex engine to fix common syntax errors automatically.
 * **Node 3: `route_after_execution`**: A conditional edge. If the SQL fails, it sends the error back to the generator to "self-correct." It includes a **Circuit Breaker** that stops the loop after 3 failed attempts.
 * **Node 4: `generate_reply`**: Formulates a human-friendly answer based on the retrieved data.
+
+<!-- ![Agent Workflow](img\SQL-Agent.png) -->
+<img src="media\SQL-Agent.png" width="1500">
 
 
 ## Setup & Installation
@@ -37,7 +40,32 @@ docker exec -it mock_postgres_db psql -U postgres -d northwind
 ### **GET** `/api/schema`
 Fetches the current database schema as perceived by the agent. Useful for debugging if the agent claims it "cannot see" a table.
 ```
-Table: "categories" - "CategoryID" (smallint) [PK] - "Picture" (bytea) - "CategoryName" (character varying) - "Description" (text) Table: "customercustomerdemo" - "CustomerID" (character) [PK] - "CustomerTypeID" (character) [PK] Table: "customerdemographics" - "CustomerTypeID" (character) [PK] - "CustomerDesc" (text) Table: "customers" - "CustomerID" (character) [PK] - "CompanyName" (character varying) - "ContactName" (character varying) - "ContactTitle" (character varying) - "Address" (character varying) - "City" (character varying) - "Region" (character varying) - "PostalCode" (character varying) - "Country" (character varying) - "Phone" (character varying) - "Fax" (character varying) Table: "employees" - "BirthDate" (date) - "Photo" (bytea) - "HireDate" (date) - "ReportsTo" (smallint) - "EmployeeID" (smallint) [PK] - "Address" (character varying) - "City" (character varying) - "Region" (character varying) - "PostalCode" (character varying) - "Country" (character varying) - "HomePhone" (character varying) - "Extension" (character varying) - "Notes" (text) - "PhotoPath" (character varying) - "LastName" (character varying) - "FirstName" (character varying) - "Title" (character varying) - "TitleOfCourtesy" (character varying) Table: "employeeterritories" - "EmployeeID" (smallint) [PK] - "TerritoryID" (character varying) [PK] Table: "order_details" - "OrderID" (smallint) [PK] - "ProductID" (smallint) [PK] - "UnitPrice" (real) - "Quantity" (smallint) - "Discount" (real) Table: "orders" - "OrderID" (smallint) [PK] - "EmployeeID" (smallint) - "OrderDate" (date) - "RequiredDate" (date) - "ShippedDate" (date) - "ShipVia" (smallint) - "Freight" (real) - "ShipCountry" (character varying) - "CustomerID" (character) - "ShipName" (character varying) - "ShipAddress" (character varying) - "ShipCity" (character varying) - "ShipRegion" (character varying) - "ShipPostalCode" (character varying) Table: "products" - "Discontinued" (integer) - "ReorderLevel" (smallint) - "ProductID" (smallint) [PK] - "SupplierID" (smallint) - "CategoryID" (smallint) - "UnitPrice" (real) - "UnitsInStock" (smallint) - "UnitsOnOrder" (smallint) - "ProductName" (character varying) - "QuantityPerUnit" (character varying) Table: "region" - "RegionID" (smallint) [PK] - "RegionDescription" (character) Table: "shippers" - "ShipperID" (smallint) [PK] - "CompanyName" (character varying) - "Phone" (character varying) Table: "shippers_tmp" - "ShipperID" (smallint) [PK] - "CompanyName" (character varying) - "Phone" (character varying) Table: "suppliers" - "SupplierID" (smallint) [PK] - "CompanyName" (character varying) - "ContactName" (character varying) - "ContactTitle" (character varying) - "Address" (character varying) - "City" (character varying) - "Region" (character varying) - "PostalCode" (character varying) - "Country" (character varying) - "Phone" (character varying) - "Fax" (character varying) - "HomePage" (text) Table: "territories" - "RegionID" (smallint) - "TerritoryID" (character varying) [PK] - "TerritoryDescription" (character) Table: "usstates" - "StateID" (smallint) - "StateName" (character varying) - "StateAbbr" (character varying) - "StateRegion" (character varying)
+Table: users
+
+id (int) [PK]
+name (varchar)
+email (varchar)
+created_at (date)
+
+Table: orders
+
+id (int) [PK]
+user_id (int) [FK → users]
+total_amount (decimal)
+created_at (date)
+
+Table: order_items
+
+order_id (int) [PK, FK → orders]
+product_id (int) [PK, FK → products]
+quantity (int)
+
+Table: products
+
+id (int) [PK]
+name (varchar)
+price (decimal)
+stock (int)
 ```
 
 ### **POST** `/api/chat`
@@ -69,7 +97,7 @@ frontend/
 │       ├── SqlCodeBlock.tsx       # Syntax-highlighted SQL with copy button
 │       └── DataTable.tsx          # Paginated results table with CSV export
 ```
-## 🛡️ Security & Reliability Features
+## Security & Reliability Features
 
 * **Read-Only Enforcement**: The system uses a manual keyword check (`DROP`, `INSERT`, etc.) to prevent database modification.
 * **Schema Injection**: The agent dynamically fetches the schema at runtime, meaning it adapts automatically if you add new tables to the database.

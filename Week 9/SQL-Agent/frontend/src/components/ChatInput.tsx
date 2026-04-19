@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatInputProps {
@@ -16,13 +16,21 @@ const SUGGESTIONS = [
 
 export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [overflow, setOverflow] = useState<"hidden" | "auto">("hidden");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        Math.min(textareaRef.current.scrollHeight, 120) + "px";
+      const scrollHeight = textareaRef.current.scrollHeight;
+      if (scrollHeight >= 120) {
+        textareaRef.current.style.height = "120px";
+        setOverflow("auto");
+      } else {
+        textareaRef.current.style.height = scrollHeight + "px";
+        setOverflow("hidden");
+      }
     }
   }, [input]);
 
@@ -41,20 +49,32 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="border-t border-border/50 bg-card/80 backdrop-blur-sm">
+    <div className="w-full">
       {/* Suggestion chips - only show when empty */}
       {!input && !disabled && (
-        <div className="px-4 pt-3 pb-1 flex flex-wrap gap-1.5">
-          <Sparkles className="h-3 w-3 text-primary/50 mt-1 mr-0.5" />
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setInput(s)}
-              className="text-[11px] px-2.5 py-1 rounded-full border border-border/50 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-            >
-              {s}
-            </button>
-          ))}
+        <div className="px-4 pt-3 pb-1 flex flex-col gap-2">
+          <button 
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground w-fit transition-colors"
+          >
+            <Sparkles className="h-3 w-3 text-primary/70" />
+            {showSuggestions ? "Hide suggested prompts" : "Show suggested prompts"}
+            {showSuggestions ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
+          </button>
+          
+          {showSuggestions && (
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setInput(s)}
+                  className="text-[11px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -70,7 +90,8 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
             onKeyDown={handleKeyDown}
             disabled={disabled}
             placeholder="Ask about your data…"
-            className="w-full resize-none rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all disabled:opacity-50"
+            style={{ overflowY: overflow }}
+            className="w-full resize-none rounded-xl border border-border/60 bg-muted/20 px-4 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all disabled:opacity-50"
           />
         </div>
         <Button

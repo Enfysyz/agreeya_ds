@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TableIcon, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { TableIcon, ChevronLeft, ChevronRight, Download, Maximize2, Minimize2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,6 +19,7 @@ const PAGE_SIZE = 10;
 
 export default function DataTable({ data }: DataTableProps) {
   const [page, setPage] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   if (!data || data.length === 0) return null;
 
@@ -45,8 +46,8 @@ export default function DataTable({ data }: DataTableProps) {
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="rounded-lg border border-border/60 overflow-hidden">
+  const tableContent = (
+    <div className={`rounded-lg border border-border/60 flex flex-col ${isFullscreen ? 'flex-1 overflow-hidden' : 'overflow-hidden'}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border/40">
         <div className="flex items-center gap-2">
@@ -58,19 +59,30 @@ export default function DataTable({ data }: DataTableProps) {
             {data.length} row{data.length !== 1 ? "s" : ""}
           </Badge>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleExportCSV}
-          className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-        >
-          <Download className="h-3 w-3 mr-1" />
-          CSV
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            {isFullscreen ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+            {isFullscreen ? <span className="ml-1">Minimize</span> : <span className="ml-1">Fullscreen</span>}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExportCSV}
+            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            CSV
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className={`overflow-x-auto ${isFullscreen ? 'flex-1 overflow-y-auto' : ''}`}>
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-border/40">
@@ -136,4 +148,16 @@ export default function DataTable({ data }: DataTableProps) {
       )}
     </div>
   );
+
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur flex p-4 sm:p-8 overflow-hidden items-center justify-center">
+        <div className="w-full max-w-6xl max-h-[90vh] flex flex-col bg-card border border-border shadow-2xl rounded-xl">
+          {tableContent}
+        </div>
+      </div>
+    );
+  }
+
+  return tableContent;
 }

@@ -94,7 +94,7 @@ function App() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* Top Bar */}
         <header className="h-13 shrink-0 border-b border-border/50 bg-card/80 backdrop-blur-sm flex items-center px-4 gap-3">
           <Button
@@ -134,7 +134,7 @@ function App() {
         </header>
 
         {/* Messages */}
-        <ScrollArea ref={scrollRef} className="flex-1">
+        <ScrollArea ref={scrollRef} className="flex-1 min-h-0">
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
             {messages.length === 0 && (
               <EmptyState />
@@ -146,7 +146,7 @@ function App() {
         </ScrollArea>
 
         {/* Input */}
-        <div className="max-w-3xl mx-auto w-full">
+        <div className="max-w-3xl mx-auto w-full shrink-0 pb-4 px-4 sm:px-0">
           <ChatInput onSend={handleSend} disabled={loading} />
         </div>
       </div>

@@ -1,3 +1,6 @@
+# QueryPilot: Analyst-in-the-Loop
+QueryPilot is a smart, local-first analytics assistant that lets anyone chat with their database using plain English instead of complex SQL code. Under the hood, a Python-based AI agent (powered by LangGraph and Llama 3) translates your questions into safe database queries, automatically double-checks its own work to fix any errors, and fetches the requested information from a PostgreSQL database. It then sends back a friendly, conversational summary alongside the raw data, which a custom React frontend instantly renders into clean, interactive tables—making data exploration seamless, secure, and accessible for non-technical users.
+
 ## Agent Logic 
 
 The agent follows a cyclic graph pattern to ensure high-quality SQL generation and error recovery.

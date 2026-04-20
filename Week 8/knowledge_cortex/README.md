@@ -29,10 +29,10 @@ docker-compose up --build -d
 # Download Ollama models
 ```
 # Pull the generation model
-docker exec -it ollama_service ollama pull llama3
+docker exec -it ollama_service_rag ollama pull llama3
 
 # Pull the embedding model
-docker exec -it ollama_service ollama pull nomic-embed-text
+docker exec -it ollama_service_rag ollama pull nomic-embed-text
 ```
 
 # API reference

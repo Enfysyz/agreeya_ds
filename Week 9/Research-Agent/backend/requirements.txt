@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+websockets
+langchain
+langchain-core
+langchain-community
+ddgs
+beautifulsoup4
+playwright
+html2text

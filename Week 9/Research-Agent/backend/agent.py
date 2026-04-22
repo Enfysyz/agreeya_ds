@@ -82,7 +82,6 @@ class ResearchAgent:
             
             page_text = await self.scrape_url(url)
             
-            # --- DEBUG PRINT: Let's see what Playwright actually scraped ---
             print(f"\n[BACKEND DEBUG] Scraped {url}")
             print(f"[BACKEND DEBUG] Text snippet: {page_text[:300]}...\n")
             

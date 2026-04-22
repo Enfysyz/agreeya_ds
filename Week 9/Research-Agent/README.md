@@ -26,5 +26,9 @@ data: {"type": "log", "message": "Initializing Deep Research protocol..."}
 
 data: {"type": "log", "message": "Found source: Article Title", "url": "[https://example.com](https://example.com)"}
 
+data: {"type": "log", "message": "Navigating and extracting content...", "url": "[https://example.com](https://example.com)"}
+
+data: {"type": "log", "message": "Navigating and extracting content...", "url": "[https://example.com](https://example.com)"}
+
 data: {"type": "complete", "result": "The final synthesized comprehensive report..."}
 ```

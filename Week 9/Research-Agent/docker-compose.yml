@@ -27,11 +27,11 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
-    
+              capabilities: [ gpu ]
+
   frontend:
     build: ./frontend
-    container_name: sql_agent_frontend
+    container_name: research_agent_frontend
     ports:
       - "5173:5173"
     environment:
@@ -39,7 +39,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./frontend:/app         # Syncs live code
+      - ./frontend:/app # Syncs live code
       - /app/node_modules
 
 volumes:

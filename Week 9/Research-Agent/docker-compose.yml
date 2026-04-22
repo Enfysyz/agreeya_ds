@@ -8,6 +8,7 @@ services:
       - "8000:8000"
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
+      - PYTHONUNBUFFERED=1
     depends_on:
       - ollama
     volumes:
@@ -27,6 +28,19 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    
+  frontend:
+    build: ./frontend
+    container_name: sql_agent_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app         # Syncs live code
+      - /app/node_modules
 
 volumes:
   ollama_data:

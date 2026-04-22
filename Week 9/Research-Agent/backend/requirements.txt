@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-websockets
+pydantic
 langchain
 langchain-core
 langchain-community

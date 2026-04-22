@@ -1,45 +1,43 @@
-import asyncio
-import websockets
 import json
+import requests
 
-async def test_agent():
-    uri = "ws://localhost:8000/ws/research"
+def test_agent():
+    url = "http://localhost:8000/api/research"
+    payload = {"topic": "Tourist spots in Los Angeles"}
     
-    print(f"Connecting to {uri}...")
+    print(f"Connecting to {url} via standard HTTP POST...")
+    
     try:
-        async with websockets.connect(uri) as websocket:
-            print("Connected! Sending research topic...")
+        # stream=True keeps the HTTP connection open to listen for yields
+        with requests.post(url, json=payload, stream=True) as response:
+            response.raise_for_status()
+            print("Connected! Listening to SSE stream...\n")
             
-            # Send the research topic to the backend
-            request_data = {"topic": "Latest breakthroughs in solid-state batteries 2024"}
-            await websocket.send(json.dumps(request_data))
-            
-            # Listen for the streaming logs and the final result
-            while True:
-                try:
-                    response = await websocket.recv()
-                    data = json.loads(response)
+            # Iterate through the chunks as they are yielded by the backend
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
                     
-                    if data["type"] == "log":
-                        url_info = f" ({data['url']})" if "url" in data else ""
-                        print(f"[AGENT LOG]: {data['message']}{url_info}")
+                    # We only care about the 'data: ' lines from the SSE format
+                    if decoded_line.startswith("data: "):
+                        json_str = decoded_line[len("data: "):]
+                        data = json.loads(json_str)
                         
-                    elif data["type"] == "complete":
-                        print("\n" + "="*50)
-                        print("[FINAL REPORT SYNTHESIZED]")
-                        print("="*50)
-                        print(data["result"])
-                        break
-                        
-                    elif data["type"] == "error":
-                        print(f"\n[ERROR]: {data['message']}")
-                        break
-                        
-                except websockets.exceptions.ConnectionClosed:
-                    print("\nConnection closed by the server.")
-                    break
-    except ConnectionRefusedError:
+                        if data["type"] == "log":
+                            url_info = f" ({data['url']})" if "url" in data else ""
+                            print(f"[AGENT LOG]: {data['message']}{url_info}")
+                            
+                        elif data["type"] == "complete":
+                            print("\n" + "="*50)
+                            print("[FINAL REPORT SYNTHESIZED]")
+                            print("="*50)
+                            print(data["result"])
+                            
+                        elif data["type"] == "error":
+                            print(f"\n[ERROR]: {data['message']}")
+                            
+    except requests.exceptions.ConnectionError:
         print("Could not connect. Is the Docker container running?")
 
 if __name__ == "__main__":
-    asyncio.run(test_agent())
+    test_agent()

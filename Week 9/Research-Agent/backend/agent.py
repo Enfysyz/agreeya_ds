@@ -94,6 +94,8 @@ class ResearchAgent:
                 print(summary)
                 print("-" * 40)
                 
+                yield self._format_sse({"type": "source_summary", "url": url, "summary": summary})
+                
                 if "No relevant information found" not in summary:
                     aggregated_findings.append(f"Source: {url}\nFindings: {summary}")
 

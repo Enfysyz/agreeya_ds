@@ -1,8 +1,9 @@
-import type { LogEntry, ResearchResult } from '@/types'
+import type { LogEntry, ResearchResult, SourceSummary } from '@/types'
 
 export async function streamResearch(
   topic: string,
   onLog: (log: LogEntry) => void,
+  onSummary: (summary: SourceSummary) => void,
   onComplete: (result: ResearchResult) => void,
   onError: (error: string) => void
 ): Promise<void> {
@@ -51,6 +52,14 @@ export async function streamResearch(
               url: event.url,
               timestamp: new Date(),
             })
+          } else if (event.type === 'source_summary') {
+            if (onSummary) {
+              onSummary({
+                type: 'source_summary',
+                url: event.url,
+                summary: event.summary,
+              })
+            }
           } else if (event.type === 'complete') {
             onComplete({
               type: 'complete',

@@ -10,7 +10,7 @@ from playwright.async_api import async_playwright
 
 class ResearchAgent:
     def __init__(self):
-        # No more websocket parameter needed
+        
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.llm = Ollama(base_url=ollama_url, model="llama3")
 
@@ -90,8 +90,8 @@ class ResearchAgent:
                 yield self._format_sse({"type": "log", "message": "Analyzing content with local LLM...", "url": url})
                 summary = await self.summarize_content(topic, page_text)
                 
-                # --- DEBUG PRINT: Let's see what Mistral replied with ---
-                print(f"[BACKEND DEBUG] Mistral Summary for {url}:")
+                
+                print(f"[BACKEND DEBUG] LLama3 Summary for {url}:")
                 print(summary)
                 print("-" * 40)
                 

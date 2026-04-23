@@ -58,6 +58,7 @@ export async function streamResearch(
                 type: 'source_summary',
                 url: event.url,
                 summary: event.summary,
+                scraped_text: event.scraped_text,
               })
             }
           } else if (event.type === 'complete') {

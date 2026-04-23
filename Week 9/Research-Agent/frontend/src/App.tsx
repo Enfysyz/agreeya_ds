@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Search } from 'lucide-react'
+import { Search, X, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { ChatMessage } from '@/components/ChatMessage'
@@ -173,47 +175,63 @@ export default function App() {
         </div>
 
         {/* Right Column: Source Summaries */}
-        {allSummaries.length > 0 && (
-          <div className="w-[400px] shrink-0 border-l bg-muted/20 flex flex-col min-h-0 overflow-hidden">
-            <div className="p-4 border-b bg-background shrink-0">
-              <h2 className="font-semibold text-sm">Source Summary</h2>
-              <p className="text-xs text-muted-foreground mt-1">Select a source from the logs to view its details</p>
+        {selectedSourceUrl && (
+          <div className="w-[400px] shrink-0 border-l bg-muted/20 flex flex-col min-h-0 overflow-hidden relative">
+            <div className="p-4 border-b bg-background shrink-0 flex items-start justify-between">
+              <div>
+                <h2 className="font-semibold text-sm">Source Details</h2>
+                <p className="text-xs text-muted-foreground mt-1">Summary and scraped content</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setSelectedSourceUrl(null)}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-4">
-                {selectedSourceUrl ? (
-                  allSummaries.filter(s => s.url === selectedSourceUrl).length > 0 ? (
-                    allSummaries.filter(s => s.url === selectedSourceUrl).map((summary, idx) => {
-                      let hostname = summary.url
-                      try {
-                        hostname = new URL(summary.url).hostname
-                      } catch {}
-                      return (
-                        <Card key={idx} className="bg-background shadow-sm border-muted mb-4">
-                          <CardHeader className="p-3 pb-2">
-                            <CardTitle className="text-sm font-medium text-indigo-600 truncate" title={summary.url}>
-                              <a href={summary.url} target="_blank" rel="noreferrer" className="hover:underline">
-                                {hostname}
+                {allSummaries.filter(s => s.url === selectedSourceUrl).length > 0 ? (
+                  allSummaries.filter(s => s.url === selectedSourceUrl).map((summary, idx) => {
+                    let hostname = summary.url
+                    try {
+                      hostname = new URL(summary.url).hostname
+                    } catch {}
+                    return (
+                      <div key={idx} className="space-y-4 mb-4">
+                        <Collapsible defaultOpen className="bg-background shadow-sm border-muted border rounded-xl overflow-hidden">
+                          <CollapsibleTrigger className="group w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+                            <span className="text-sm font-medium text-indigo-600 truncate" title={summary.url}>
+                              <a href={summary.url} target="_blank" rel="noreferrer" className="hover:underline" onClick={e => e.stopPropagation()}>
+                                {hostname} - Summary
                               </a>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0">
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="p-3 pt-0 border-t mt-3">
                             <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
                               {summary.summary}
                             </p>
-                          </CardContent>
-                        </Card>
-                      )
-                    })
-                  ) : (
-                    <div className="text-center text-sm text-slate-500 mt-10">No summary available for this source.</div>
-                  )
+                          </CollapsibleContent>
+                        </Collapsible>
+
+                        {summary.scraped_text && (
+                          <Collapsible className="bg-background shadow-sm border-muted border rounded-xl overflow-hidden">
+                            <CollapsibleTrigger className="group w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+                              <span className="text-sm font-medium text-indigo-600">
+                                Scraped Content
+                              </span>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="p-3 pt-0 border-t mt-3">
+                              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-all">
+                                {summary.scraped_text}
+                              </p>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+                      </div>
+                    )
+                  })
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-40 text-center px-4 mt-10">
-                    <Search className="h-8 w-8 text-slate-300 mb-3" />
-                    <p className="text-sm text-slate-500 font-medium">No source selected</p>
-                    <p className="text-xs text-slate-400 mt-1">Expand a source in the research logs to view its summary here.</p>
-                  </div>
+                  <div className="text-center text-sm text-slate-500 mt-10">No summary available for this source.</div>
                 )}
               </div>
             </ScrollArea>

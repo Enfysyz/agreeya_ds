@@ -9,6 +9,7 @@ export interface SourceSummary {
   type: 'source_summary'
   url: string
   summary: string
+  scraped_text?: string
 }
 
 export interface ResearchResult {

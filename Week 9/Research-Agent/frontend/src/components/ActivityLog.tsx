@@ -73,18 +73,20 @@ function SourceCollapsible({ url, logs, onSourceSelect, selectedSourceUrl, isAct
     }
   }
 
-  let hostname = url
-  try { hostname = new URL(url).hostname } catch {}
-
   if (!isActive) {
     return (
       <div className={`border rounded-md overflow-hidden transition-colors ${isSelected ? 'border-indigo-300 ring-1 ring-indigo-100' : 'bg-white'}`}>
         <Button variant="ghost" size="sm" onClick={() => onSourceSelect && onSourceSelect(url)} className={`w-full flex items-center justify-between p-2 h-auto rounded-none ${isSelected ? 'bg-indigo-50/50 hover:bg-indigo-50' : 'hover:bg-slate-50'}`}>
-          <div className="flex items-center gap-2 overflow-hidden">
+          <div className="flex items-center gap-2 overflow-hidden w-full mr-2">
             <Globe className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
-            <span className={`text-xs truncate ${isSelected ? 'font-semibold text-indigo-700' : 'text-slate-600'}`}>{hostname}</span>
+            <span className={`text-xs truncate ${isSelected ? 'font-semibold text-indigo-700' : 'text-slate-600'}`} title={url}>{url}</span>
           </div>
-          <ChevronRight className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400 opacity-0 group-hover:opacity-100'}`} />
+          <div className="flex items-center gap-2 shrink-0">
+            <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-indigo-600 text-slate-400 transition-colors" title="Visit source website">
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <ChevronRight className={`h-3.5 w-3.5 ${isSelected ? 'text-indigo-600' : 'text-slate-400 opacity-0 group-hover:opacity-100'}`} />
+          </div>
         </Button>
       </div>
     )
@@ -94,11 +96,16 @@ function SourceCollapsible({ url, logs, onSourceSelect, selectedSourceUrl, isAct
     <Collapsible open={isOpen} onOpenChange={handleToggle} className={`border rounded-md overflow-hidden transition-colors ${isSelected ? 'border-indigo-300 ring-1 ring-indigo-100' : 'bg-white'}`}>
       <CollapsibleTrigger asChild>
         <Button variant="ghost" size="sm" className={`w-full flex items-center justify-between p-2 h-auto rounded-none ${isSelected ? 'bg-indigo-50/50 hover:bg-indigo-50' : 'hover:bg-slate-50'}`}>
-          <div className="flex items-center gap-2 overflow-hidden">
+          <div className="flex items-center gap-2 overflow-hidden w-full mr-2">
             <Globe className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
-            <span className={`text-xs truncate ${isSelected ? 'font-semibold text-indigo-700' : 'text-slate-600'}`}>{hostname}</span>
+            <span className={`text-xs truncate ${isSelected ? 'font-semibold text-indigo-700' : 'text-slate-600'}`} title={url}>{url}</span>
           </div>
-          {isOpen ? <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />}
+          <div className="flex items-center gap-2 shrink-0">
+            <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-indigo-600 text-slate-400 transition-colors" title="Visit source website">
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            {isOpen ? <ChevronDown className="h-3.5 w-3.5 text-slate-400" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
+          </div>
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent className="p-2 border-t bg-slate-50/50 space-y-1">

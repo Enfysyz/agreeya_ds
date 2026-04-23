@@ -103,10 +103,10 @@ export default function App() {
           prev.map((msg) =>
             msg.id === assistantId
               ? {
-                  ...msg,
-                  content: `⚠️ **Error:** ${error}`,
-                  isLoading: false,
-                }
+                ...msg,
+                content: `⚠️ **Error:** ${error}`,
+                isLoading: false,
+              }
               : msg
           )
         )
@@ -152,9 +152,9 @@ export default function App() {
               <div className="max-w-4xl mx-auto py-6">
                 <div className="flex flex-col space-y-4 px-4">
                   {messages.map((message) => (
-                    <ChatMessage 
-                      key={message.id} 
-                      message={message} 
+                    <ChatMessage
+                      key={message.id}
+                      message={message}
                       onSourceSelect={setSelectedSourceUrl}
                       selectedSourceUrl={selectedSourceUrl}
                     />
@@ -193,15 +193,13 @@ export default function App() {
                     let hostname = summary.url
                     try {
                       hostname = new URL(summary.url).hostname
-                    } catch {}
+                    } catch { }
                     return (
                       <div key={idx} className="space-y-4 mb-4">
                         <Collapsible defaultOpen className="bg-background shadow-sm border-muted border rounded-xl overflow-hidden">
                           <CollapsibleTrigger className="group w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
                             <span className="text-sm font-medium text-indigo-600 truncate" title={summary.url}>
-                              <a href={summary.url} target="_blank" rel="noreferrer" className="hover:underline" onClick={e => e.stopPropagation()}>
-                                {hostname} - Summary
-                              </a>
+                              Summary
                             </span>
                             <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
                           </CollapsibleTrigger>

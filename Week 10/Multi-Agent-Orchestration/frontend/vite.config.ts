@@ -12,8 +12,17 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      '/analyze': 'http://localhost:8000',
+    host: true,
+    port: 5173,
+    watch: {
+      usePolling: true,
     },
-  },
+    proxy: {
+      '/analyze': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

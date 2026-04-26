@@ -2,7 +2,15 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
-from graph import app_graph
+import logging
+from src.graph import app_graph
+import traceback
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - [%(levelname)s] - %(message)s",
+    datefmt="%H:%M:%S"
+)
 
 app = FastAPI(title="Multi-Agent Company Intelligence API")
 
@@ -42,6 +50,7 @@ async def analyze_company(request: ResearchRequest):
             yield f"data: {json.dumps({'agent': 'system', 'status': 'done'})}\n\n"
             
         except Exception as e:
+            logging.error(f"Graph execution failed:\n{traceback.format_exc()}")
             error_payload = {"agent": "system", "status": "error", "message": str(e)}
             yield f"data: {json.dumps(error_payload)}\n\n"
 

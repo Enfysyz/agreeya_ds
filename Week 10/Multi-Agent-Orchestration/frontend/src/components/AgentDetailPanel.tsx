@@ -1,7 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AGENT_META } from "@/types";
 import type { AgentEvent } from "@/types";
@@ -80,7 +80,9 @@ export function AgentDetailPanel({ event, onClose }: AgentDetailPanelProps) {
     return (
       <div className="detail-panel detail-panel--empty">
         <div className="detail-empty-state">
-          <span className="detail-empty-icon">🔎</span>
+          <span className="detail-empty-icon">
+            <Search className="h-8 w-8 text-muted-foreground" />
+          </span>
           <p className="text-muted-foreground text-sm">
             Click on an agent step to view its output
           </p>
@@ -97,7 +99,12 @@ export function AgentDetailPanel({ event, onClose }: AgentDetailPanelProps) {
         <CardHeader className="detail-card-header">
           <div className="detail-header-row">
             <div className="detail-header-info">
-              <span className="detail-agent-icon">{event.icon}</span>
+              <span className="detail-agent-icon">
+                {(() => {
+                  const Icon = event.icon;
+                  return <Icon className="h-6 w-6" />;
+                })()}
+              </span>
               <div>
                 <CardTitle className="detail-agent-title">{event.label}</CardTitle>
                 {meta && (

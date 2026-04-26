@@ -22,7 +22,7 @@ export interface AgentEvent {
   id: string;
   agent: AgentName;
   label: string;
-  icon: string;
+  icon: React.ElementType;
   status: "completed" | "error" | "running";
   data: Record<string, unknown> | null;
   timestamp: Date;
@@ -41,49 +41,60 @@ export interface ChatMessage {
   workflowDurationMs?: number;
 }
 
+import {
+  Building2,
+  Swords,
+  TrendingUp,
+  DollarSign,
+  CheckSquare,
+  FileEdit,
+  Microscope,
+  Settings,
+} from "lucide-react";
+
 // ── Mapping of agent names to friendly labels & icons ──
 export const AGENT_META: Record<
   string,
-  { label: string; icon: string; description: string }
+  { label: string; icon: React.ElementType; description: string }
 > = {
   research_company: {
     label: "Company Researcher",
-    icon: "🏢",
+    icon: Building2,
     description: "Researches the company's core operations, products, and business model.",
   },
   research_competitor: {
     label: "Competitor Analyst",
-    icon: "⚔️",
+    icon: Swords,
     description: "Analyzes the competitive landscape and rival positioning.",
   },
   research_market: {
     label: "Market Analyst",
-    icon: "📊",
+    icon: TrendingUp,
     description: "Examines industry trends, market size, and growth opportunities.",
   },
   research_financial: {
     label: "Financial Analyst",
-    icon: "💰",
+    icon: DollarSign,
     description: "Evaluates revenue, profitability, funding, and financial risks.",
   },
   validate_data: {
     label: "Data Validator",
-    icon: "✅",
+    icon: CheckSquare,
     description: "QA engineer that validates research data completeness and accuracy.",
   },
   write_report: {
     label: "Report Writer",
-    icon: "📝",
+    icon: FileEdit,
     description: "Synthesizes all validated data into a comprehensive report.",
   },
   critique_report: {
     label: "Report Critic",
-    icon: "🔍",
+    icon: Microscope,
     description: "Grades the report on quality, synthesis, and readability.",
   },
   system: {
     label: "System",
-    icon: "⚙️",
+    icon: Settings,
     description: "System-level orchestration events.",
   },
 };

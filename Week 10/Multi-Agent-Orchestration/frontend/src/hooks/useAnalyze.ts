@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import type { AgentEvent, ChatMessage, SSEPayload } from "@/types";
 import { AGENT_META } from "@/types";
+import { Bot } from "lucide-react";
 
 let messageIdCounter = 0;
 const nextId = () => `msg-${++messageIdCounter}`;
@@ -46,6 +47,8 @@ export function useAnalyze() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const requestStartTime = Date.now();
+
     try {
       const res = await fetch("/analyze", {
         method: "POST",
@@ -62,8 +65,8 @@ export function useAnalyze() {
       const decoder = new TextDecoder();
       let buffer = "";
 
-      let lastEventTime = Date.now();
-      const workflowStartTime = lastEventTime;
+      let lastEventTime = requestStartTime;
+      const workflowStartTime = requestStartTime;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -113,7 +116,7 @@ export function useAnalyze() {
           } else if (payload.status === "completed") {
             const meta = AGENT_META[payload.agent] || {
               label: payload.agent,
-              icon: "🤖",
+              icon: Bot,
             };
 
             const event: AgentEvent = {

@@ -17,7 +17,12 @@ export function AgentStep({ event, isActive, onClick }: AgentStepProps) {
       className={`agent-step ${isActive ? "agent-step--active" : ""}`}
       id={`agent-step-${event.agent}`}
     >
-      <div className="agent-step-icon">{event.icon}</div>
+      <div className="agent-step-icon">
+        {(() => {
+          const Icon = event.icon;
+          return <Icon className="h-4 w-4" />;
+        })()}
+      </div>
       <div className="agent-step-content">
         <span className="agent-step-label">{event.label}</span>
         <span className="agent-step-time">

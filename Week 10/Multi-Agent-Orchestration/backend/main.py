@@ -16,7 +16,8 @@ async def analyze_company(request: ResearchRequest):
     async def event_generator():
         initial_state = {
             "company": request.company,
-            "iterations": 0
+            "data_iterations": 0,
+            "report_iterations": 0
         }
         
         try:

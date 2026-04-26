@@ -453,9 +453,25 @@
    Detail Panel (Right Side)
    ───────────────────────────────────────────── */
 .detail-panel {
-  width: 380px;
-  flex-shrink: 0;
-  animation: slideInRight 0.25s ease-out;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 450px;
+  height: 100vh;
+  background: var(--background);
+  border-left: 1px solid var(--border);
+  z-index: 50;
+  padding: 1rem;
+  box-shadow: -4px 0 24px oklch(0 0 0 / 10%);
+  transform: translateX(100%);
+  animation: slideInRightFixed 0.3s forwards ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideInRightFixed {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
 .detail-panel--empty {
@@ -463,13 +479,12 @@
 }
 
 .detail-card {
-  position: sticky;
-  top: 1rem;
-  height: fit-content;
-  max-height: calc(100vh - 12rem);
-  overflow: hidden;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
 }
 
 .detail-card-header {
@@ -519,7 +534,11 @@
 
 .detail-scroll {
   height: 100%;
-  max-height: calc(100vh - 20rem);
+  padding-right: 0.5rem;
+}
+
+.detail-scroll [data-slot="scroll-area-viewport"] {
+  height: 100%;
 }
 
 .detail-empty-state {

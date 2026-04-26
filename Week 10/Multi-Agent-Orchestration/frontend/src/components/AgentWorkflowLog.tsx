@@ -23,7 +23,14 @@ export function AgentWorkflowLog({
 }: AgentWorkflowLogProps) {
   const [isOpen, setIsOpen] = useState(true);
 
-  if (events.length === 0 && !isStreaming) return null;
+  const visibleEvents = events.filter((event) => {
+    if (event.status !== "completed") return true;
+    if (!event.data) return false;
+    if (Object.keys(event.data).length === 0) return false;
+    return true;
+  });
+
+  if (visibleEvents.length === 0 && !isStreaming) return null;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="workflow-log">
@@ -38,7 +45,7 @@ export function AgentWorkflowLog({
             Agent Workflow
           </span>
           <span className="workflow-trigger-count">
-            {events.length} step{events.length !== 1 ? "s" : ""}
+            {visibleEvents.length} step{visibleEvents.length !== 1 ? "s" : ""}
           </span>
           {isStreaming && (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-primary ml-2" />
@@ -47,13 +54,13 @@ export function AgentWorkflowLog({
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="workflow-steps">
-          {events.map((event, index) => (
-            <div key={`${event.agent}-${index}`} className="workflow-step-wrapper">
+          {visibleEvents.map((event, index) => (
+            <div key={event.id} className="workflow-step-wrapper">
               {index > 0 && <div className="workflow-connector" />}
               <AgentStep
                 event={event}
-                isActive={selectedAgent === `${event.agent}-${index}`}
-                onClick={() => onSelectAgent(`${event.agent}-${index}`)}
+                isActive={selectedAgent === event.id}
+                onClick={() => onSelectAgent(event.id)}
               />
             </div>
           ))}

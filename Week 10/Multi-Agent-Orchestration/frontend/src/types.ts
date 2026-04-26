@@ -19,6 +19,7 @@ export interface SSEPayload {
 
 // ── Processed agent event for the UI ──
 export interface AgentEvent {
+  id: string;
   agent: AgentName;
   label: string;
   icon: string;
@@ -35,6 +36,7 @@ export interface ChatMessage {
   agentEvents: AgentEvent[];
   isStreaming: boolean;
   report?: string;
+  timestamp: Date;
 }
 
 // ── Mapping of agent names to friendly labels & icons ──

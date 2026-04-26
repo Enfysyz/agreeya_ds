@@ -14,17 +14,17 @@ export function ChatBubble({ message }: ChatBubbleProps) {
 
   const selectedEvent = useMemo(() => {
     if (!selectedAgentKey) return null;
-    const [agentName, indexStr] = selectedAgentKey.split(/-(?=\d+$)/);
-    const index = parseInt(indexStr, 10);
-    return message.agentEvents.find(
-      (e, i) => e.agent === agentName && i === index
-    ) || null;
+    return message.agentEvents.find(e => e.id === selectedAgentKey) || null;
   }, [selectedAgentKey, message.agentEvents]);
 
   if (message.role === "user") {
     return (
       <div className="chat-bubble chat-bubble--user" id={`message-${message.id}`}>
         <div className="chat-bubble-content chat-bubble-content--user">
+          <div className="flex justify-between items-center mb-1 text-xs opacity-80">
+            <span className="font-semibold">You</span>
+            <span className="ml-4">{message.timestamp?.toLocaleTimeString()}</span>
+          </div>
           <p className="chat-user-text">
             Analyze <strong>{message.content}</strong>
           </p>
@@ -40,7 +40,12 @@ export function ChatBubble({ message }: ChatBubbleProps) {
     <div className="chat-bubble chat-bubble--assistant" id={`message-${message.id}`}>
       <div className="assistant-layout">
         {/* Main content column */}
-        <div className={`assistant-main ${selectedEvent ? "assistant-main--with-panel" : ""}`}>
+        <div className="assistant-main">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold text-sm">System</span>
+            <span className="text-xs text-muted-foreground">{message.timestamp?.toLocaleTimeString()}</span>
+          </div>
+
           {/* Agent workflow log (collapsible) */}
           {message.agentEvents.length > 0 && (
             <AgentWorkflowLog

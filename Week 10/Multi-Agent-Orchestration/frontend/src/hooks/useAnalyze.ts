@@ -24,6 +24,7 @@ export function useAnalyze() {
       content: company.trim(),
       agentEvents: [],
       isStreaming: false,
+      timestamp: new Date(),
     };
 
     // Add placeholder assistant message
@@ -34,6 +35,7 @@ export function useAnalyze() {
       content: "",
       agentEvents: [],
       isStreaming: true,
+      timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
@@ -107,6 +109,7 @@ export function useAnalyze() {
             };
 
             const event: AgentEvent = {
+              id: nextId(),
               agent: payload.agent,
               label: meta.label,
               icon: meta.icon,

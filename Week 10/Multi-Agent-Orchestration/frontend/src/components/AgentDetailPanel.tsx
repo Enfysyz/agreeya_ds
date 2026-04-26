@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AGENT_META } from "@/types";
 import type { AgentEvent } from "@/types";
 import type { JSX } from "react";
+import Markdown from "react-markdown";
 
 interface AgentDetailPanelProps {
   event: AgentEvent | null;
@@ -22,8 +23,12 @@ function renderValue(value: unknown, depth = 0): JSX.Element {
 
   if (typeof value === "string") {
     // Render long strings as paragraphs
-    if (value.length > 80) {
-      return <p className="detail-text">{value}</p>;
+    if (value.length > 80 || value.includes('\n') || value.includes('#') || value.includes('*')) {
+      return (
+        <div className="detail-text prose prose-sm dark:prose-invert">
+          <Markdown>{value}</Markdown>
+        </div>
+      );
     }
     return <span className="detail-value-string">{value}</span>;
   }

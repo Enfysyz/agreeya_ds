@@ -15,8 +15,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
-
+              capabilities: [ gpu ]
 
   backend:
     build: ./backend
@@ -29,6 +28,19 @@ services:
       - ollama
     volumes:
       - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    container_name: research_agent_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app # Syncs live code
+      - /app/node_modules
 
 volumes:
   ollama_data:

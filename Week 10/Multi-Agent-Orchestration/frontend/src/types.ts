@@ -26,6 +26,7 @@ export interface AgentEvent {
   status: "completed" | "error" | "running";
   data: Record<string, unknown> | null;
   timestamp: Date;
+  durationMs?: number;
 }
 
 // ── Chat message model ──
@@ -37,6 +38,7 @@ export interface ChatMessage {
   isStreaming: boolean;
   report?: string;
   timestamp: Date;
+  workflowDurationMs?: number;
 }
 
 // ── Mapping of agent names to friendly labels & icons ──

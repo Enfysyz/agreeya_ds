@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { formatDuration } from "@/lib/utils";
 import type { AgentEvent } from "@/types";
 
 interface AgentStepProps {
@@ -21,6 +22,7 @@ export function AgentStep({ event, isActive, onClick }: AgentStepProps) {
         <span className="agent-step-label">{event.label}</span>
         <span className="agent-step-time">
           {event.timestamp.toLocaleTimeString()}
+          {event.durationMs !== undefined && ` • ${formatDuration(event.durationMs)}`}
         </span>
       </div>
       <div className="agent-step-status">

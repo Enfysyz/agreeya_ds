@@ -3,6 +3,7 @@ import Markdown from "react-markdown";
 import { Loader2 } from "lucide-react";
 import { AgentWorkflowLog } from "@/components/AgentWorkflowLog";
 import { AgentDetailPanel } from "@/components/AgentDetailPanel";
+import { formatDuration } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
 
 interface ChatBubbleProps {
@@ -19,12 +20,12 @@ export function ChatBubble({ message }: ChatBubbleProps) {
 
   if (message.role === "user") {
     return (
-      <div className="chat-bubble chat-bubble--user" id={`message-${message.id}`}>
+      <div className="chat-bubble chat-bubble--user flex-col items-end" id={`message-${message.id}`}>
+        <div className="flex items-center gap-2 mb-1 text-xs text-muted-foreground mr-1">
+          <span className="font-semibold text-foreground">You</span>
+          <span>{message.timestamp?.toLocaleTimeString()}</span>
+        </div>
         <div className="chat-bubble-content chat-bubble-content--user">
-          <div className="flex justify-between items-center mb-1 text-xs opacity-80">
-            <span className="font-semibold">You</span>
-            <span className="ml-4">{message.timestamp?.toLocaleTimeString()}</span>
-          </div>
           <p className="chat-user-text">
             Analyze <strong>{message.content}</strong>
           </p>
@@ -41,9 +42,14 @@ export function ChatBubble({ message }: ChatBubbleProps) {
       <div className="assistant-layout">
         {/* Main content column */}
         <div className="assistant-main">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 w-full">
             <span className="font-semibold text-sm">System</span>
             <span className="text-xs text-muted-foreground">{message.timestamp?.toLocaleTimeString()}</span>
+            {message.workflowDurationMs !== undefined && (
+              <span className="text-xs text-muted-foreground ml-auto bg-secondary/50 px-2 py-0.5 rounded border border-border">
+                Ran for {formatDuration(message.workflowDurationMs)}
+              </span>
+            )}
           </div>
 
           {/* Agent workflow log (collapsible) */}

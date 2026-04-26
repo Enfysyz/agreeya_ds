@@ -62,6 +62,9 @@ export function useAnalyze() {
       const decoder = new TextDecoder();
       let buffer = "";
 
+      let lastEventTime = Date.now();
+      const workflowStartTime = lastEventTime;
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -82,12 +85,16 @@ export function useAnalyze() {
             continue;
           }
 
+          const now = Date.now();
+          const durationMs = now - lastEventTime;
+          lastEventTime = now;
+
           // Process the SSE event
           if (payload.status === "done") {
             // Mark streaming complete
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantId ? { ...m, isStreaming: false } : m
+                m.id === assistantId ? { ...m, isStreaming: false, workflowDurationMs: now - workflowStartTime } : m
               )
             );
           } else if (payload.status === "error") {
@@ -98,6 +105,7 @@ export function useAnalyze() {
                       ...m,
                       isStreaming: false,
                       content: `❌ Error: ${payload.message || "Unknown error"}`,
+                      workflowDurationMs: now - workflowStartTime
                     }
                   : m
               )
@@ -116,6 +124,7 @@ export function useAnalyze() {
               status: "completed",
               data: payload.data || null,
               timestamp: new Date(),
+              durationMs,
             };
 
             setMessages((prev) =>

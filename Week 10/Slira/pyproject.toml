@@ -1,0 +1,17 @@
+[project]
+name = "jira-slack-agent"
+version = "0.1.0"
+description = "LangGraph agent for Jira via Slack"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph",
+    "langchain",
+    "langchain-core",
+    "langchain-ollama",
+    "jira",
+    "slack_bolt",
+    "python-dotenv",
+    "fastapi",
+    "langgraph-sdk",
+    "aiohttp"
+]

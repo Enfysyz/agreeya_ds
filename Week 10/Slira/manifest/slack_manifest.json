@@ -1,0 +1,48 @@
+{
+    "display_information": {
+        "name": "Slira"
+    },
+    "features": {
+        "bot_user": {
+            "display_name": "Slira",
+            "always_online": false
+        },
+        "assistant_view": {
+            "assistant_description": "Integrates slack with Jira"
+        }
+    },
+    "oauth_config": {
+        "scopes": {
+            "bot": [
+                "app_mentions:read",
+                "assistant:write",
+                "channels:history",
+                "channels:join",
+                "channels:read",
+                "chat:write",
+                "groups:history",
+                "groups:read",
+                "im:history",
+                "im:write",
+                "mpim:history",
+                "im:read",
+                "chat:write.public"
+            ]
+        }
+    },
+    "settings": {
+        "event_subscriptions": {
+            "request_url": "https://paddling-salsa-blunt.ngrok-free.dev/events/slack", 
+            "bot_events": [
+                "app_mention",
+                "message.channels",
+                "message.im",
+                "message.mpim",
+                "assistant_thread_started"
+            ]
+        },
+        "org_deploy_enabled": false,
+        "socket_mode_enabled": false,
+        "token_rotation_enabled": false
+    }
+}

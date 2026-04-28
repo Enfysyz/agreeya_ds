@@ -1,0 +1,10 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "jira_agent": "./src/agent.py:graph"
+  },
+  "env": ".env",
+  "http": {
+    "app": "src.server:app"
+  }
+}

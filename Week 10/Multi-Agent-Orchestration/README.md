@@ -1,6 +1,13 @@
-# Multi-Agent Orchestration Backend
+# Multi-Agent Orchestration
 
-This document details the Multi-Agent API and the various agents that compose the LangGraph workflow, including their specific roles and JSON outputs.
+This system is an autonomous, multi-agent intelligence pipeline that acts as a scalable "digital consulting firm." Using a hierarchical team of specialized AI researchers, it parallel-processes company, market, competitor, and financial data. It features a rigorous, two-stage quality assurance loop—where a Data Validator strictly enforces the retrieval of hard metrics and an Editorial Critic refines the synthesis—before streaming a validated, consultant-grade business report in real-time.
+
+<img src="media\Multi-Agent Orchestration.png" width="1300">
+
+# Build Project
+```bash
+docker-compose up --build -d
+```
 
 # Download Ollama model
 ```bash

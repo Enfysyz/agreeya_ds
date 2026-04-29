@@ -12,3 +12,8 @@ ngrok http 8000
 ## Update Slack Config
 - Go to https://api.slack.com/apps and choose your app
 - Change link under `Event Subscriptions` (eg. https<nolink>://a1b2-c3d4.ngrok-free.app/events/slack)
+
+# Test Jira connection
+```bash
+docker-compose exec app python -c "from src.tools import jira_client; print('Connected Projects:', [p.key for p in jira_client.projects()])"
+```

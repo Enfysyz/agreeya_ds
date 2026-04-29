@@ -20,7 +20,6 @@ def _clean_text(text: str) -> str:
     """Removes the @BotName mention from the raw Slack text."""
     return re.sub(r'<@U[A-Z0-9]+>', '', text).strip()
 
-# 3. Core logic extracted into a reusable function
 async def run_langgraph_agent(event, say):
     text = _clean_text(event.get("text", ""))
     if not text:
@@ -65,7 +64,6 @@ async def run_langgraph_agent(event, say):
 # 4. Separated Listeners to prevent Double-Triggering
 @slack_app.event("app_mention")
 async def handle_mentions(event, say):
-    """Triggers ONLY when @mentioned in a channel."""
     await run_langgraph_agent(event, say)
 
 @slack_app.event("message")
@@ -75,7 +73,6 @@ async def handle_messages(event, say):
     if event.get("channel_type") == "im" and not event.get("bot_id"):
         await run_langgraph_agent(event, say)
 
-# 5. Mount the Slack app to FastAPI
 app = FastAPI()
 slack_handler = AsyncSlackRequestHandler(slack_app)
 

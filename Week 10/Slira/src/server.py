@@ -57,9 +57,10 @@ async def run_langgraph_agent(event, say):
             history_text += "\n--- PREVIOUS THREAD CONTEXT ---\n"
             
             for msg in replies.get("messages", []):
-                if msg.get("ts") != message_ts and not msg.get("bot_id"):
+                if msg.get("ts") != message_ts:
                     msg_text = _clean_text(msg.get("text", ""))
-                    history_text += f"- {msg_text}\n"
+                    role = "Bot" if msg.get("bot_id") else "User"
+                    history_text += f"- {role}: {msg_text}\n"
             
             history_text += f"\n--- USER COMMAND ---\n{text}"
             full_prompt = history_text

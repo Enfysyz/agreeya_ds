@@ -1,6 +1,5 @@
 import os
 import logging
-from langchain_core.tools import tool
 from jira import JIRA
 
 # --- LOGGING CONFIGURATION ---
@@ -18,7 +17,6 @@ jira_client = JIRA(
     basic_auth=(os.environ.get('JIRA_EMAIL'), os.environ.get('JIRA_API_TOKEN'))
 )
 
-@tool
 def create_jira_ticket(summary: str, description: str, project_key: str, action: str, issue_type: str = "Task", due_date: str = None) -> str:
     """Handles Jira ticket creation and drafting.
     
@@ -32,10 +30,10 @@ def create_jira_ticket(summary: str, description: str, project_key: str, action:
     """
     logger.info(f"[create_jira_ticket] INPUT: project='{project_key}', action='{action}', due='{due_date}'")
     
-    # THE BRICK WALL: If the AI didn't explicitly use the word "CREATE", block it.
     if action.upper() != "CREATE":
         logger.info("[create_jira_ticket] Action was DRAFT. Blocking Jira API call.")
-        return "SYSTEM DIRECTIVE: Draft generated successfully. Do NOT create the ticket yet. You MUST show the user the draft and ask for their explicit approval to create it."
+        draft_msg = f"Here is the draft for your ticket:\n*Project:* {project_key}\n*Summary:* {summary}\n*Description:* {description}\n*Due Date:* {due_date or 'N/A'}\n\nShould I go ahead and create this ticket?"
+        return draft_msg
         
     try:
         issue_fields = {
@@ -58,7 +56,6 @@ def create_jira_ticket(summary: str, description: str, project_key: str, action:
         logger.error(f"[create_jira_ticket] ERROR: {error_msg}")
         return error_msg
 
-@tool
 def move_jira_ticket(issue_key: str, transition_name: str) -> str:
     """Moves or transitions a Jira ticket to a new status.
     
@@ -93,8 +90,7 @@ def move_jira_ticket(issue_key: str, transition_name: str) -> str:
         logger.error(f"[move_jira_ticket] ERROR: {error_msg}")
         return error_msg
     
-@tool
-def get_my_tasks(timeframe: str) -> str:
+def get_my_tasks(timeframe: str = "all") -> str:
     """Fetches Jira tasks assigned to the user based on a timeframe.
     
     Args:
@@ -114,27 +110,24 @@ def get_my_tasks(timeframe: str) -> str:
         logger.info(f"[get_my_tasks] ACTION: Jira returned {len(issues)} issues.")
         
         if not issues:
-            result = f"SYSTEM DIRECTIVE: The user cannot see this. Tell the user exactly this: 'Great news! You have no {timeframe} tasks.'"
+            result = f"Great news! You have no {timeframe} tasks."
             logger.info(f"[get_my_tasks] RESULT: {result}")
             return result
             
-        result = "SYSTEM DIRECTIVE: The user CANNOT see this data. YOU MUST READ THIS LIST AND REPEAT EVERY TICKET TO THE USER IN YOUR RESPONSE:\n\n"
-        result += f"*Here are your {timeframe} tasks:*\n"
+        result = f"*Here are your {timeframe} tasks:*\n\n"
         
         for issue in issues:
             due_date = issue.fields.duedate or "No Due Date"
             result += f"- [{issue.key}] {issue.fields.summary} (Due: {due_date})\n"
             
-        # We replace newlines with a literal '\n' string in the log so it doesn't break terminal formatting
         logger.info(f"[get_my_tasks] RESULT: {result.replace(chr(10), ' | ')}")
         return result
         
     except Exception as e:
-        error_msg = f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        error_msg = f"Failed to get tasks: {str(e)}"
         logger.error(f"[get_my_tasks] ERROR: {error_msg}")
         return error_msg
 
-@tool
 def get_daily_summary() -> str:
     """Generates a detailed audit log of the user's personal Jira activity from the last 24 hours.
     Use this when the user asks for their daily summary, status report, or 'what did I do today?'.
@@ -149,8 +142,7 @@ def get_daily_summary() -> str:
         issues = jira_client.search_issues(jql, expand='changelog', maxResults=15)
         logger.info(f"[get_daily_summary] ACTION: Jira returned {len(issues)} recently updated issues.")
         
-        result = "SYSTEM DIRECTIVE: The user CANNOT see this data. YOU MUST READ THIS SUMMARY AND FORMAT IT NICELY FOR THE USER:\n\n"
-        result += "*📝 Your Personal Activity (Last 24 Hours):*\n\n"
+        result = "*📝 Your Personal Activity (Last 24 Hours):*\n\n"
         
         if not issues:
             result += "You haven't modified or updated any tickets in the last 24 hours.\n"
@@ -178,11 +170,10 @@ def get_daily_summary() -> str:
         return result
         
     except Exception as e:
-        error_msg = f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        error_msg = f"Failed to get daily summary: {str(e)}"
         logger.error(f"[get_daily_summary] ERROR: {error_msg}")
         return error_msg
     
-@tool
 def get_team_activity(project_key: str = None) -> str:
     """Generates a summary of all Jira activity (updates, creations, status changes) from the last 24 hours.
     If project_key is provided, it filters by that project.
@@ -199,8 +190,7 @@ def get_team_activity(project_key: str = None) -> str:
         issues = jira_client.search_issues(jql, expand='changelog', maxResults=15)
         logger.info(f"[get_team_activity] ACTION: Jira returned {len(issues)} recently updated team issues.")
         
-        result = "SYSTEM DIRECTIVE: The user CANNOT see this data. YOU MUST READ THIS SUMMARY AND FORMAT IT NICELY FOR THE USER:\n\n"
-        result += f"*⏱️ Recent Jira Activity (Last 24 Hours){' for ' + project_key if project_key else ''}:*\n\n"
+        result = f"*⏱️ Recent Jira Activity (Last 24 Hours){' for ' + project_key if project_key else ''}:*\n\n"
         
         if not issues:
             result += "No tickets were updated or modified in the last 24 hours.\n"
@@ -228,6 +218,6 @@ def get_team_activity(project_key: str = None) -> str:
         return result
         
     except Exception as e:
-        error_msg = f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        error_msg = f"Failed to get team activity: {str(e)}"
         logger.error(f"[get_team_activity] ERROR: {error_msg}")
         return error_msg

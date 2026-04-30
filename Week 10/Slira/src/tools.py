@@ -1,6 +1,16 @@
 import os
+import logging
 from langchain_core.tools import tool
 from jira import JIRA
+
+# --- LOGGING CONFIGURATION ---
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+# -----------------------------
 
 jira_options = {'server': os.environ.get('JIRA_SERVER_URL')}
 jira_client = JIRA(
@@ -18,6 +28,8 @@ def create_jira_ticket(summary: str, description: str, project_key: str, issue_t
         project_key: The short, uppercase prefix of the project (e.g., KAN, DEV, PROJ).
         issue_type: The type of ticket (defaults to 'Task').
     """
+    logger.info(f"[create_jira_ticket] INPUT: project_key='{project_key}', summary='{summary}', issue_type='{issue_type}'")
+    
     try:
         new_issue = jira_client.create_issue(
             project=project_key,
@@ -25,9 +37,13 @@ def create_jira_ticket(summary: str, description: str, project_key: str, issue_t
             description=description,
             issuetype={'name': issue_type}
         )
-        return f"Successfully created ticket: {new_issue.key}"
+        result = f"Successfully created ticket: {new_issue.key}"
+        logger.info(f"[create_jira_ticket] RESULT: {result}")
+        return result
     except Exception as e:
-        return f"Failed to create ticket: {str(e)}"
+        error_msg = f"Failed to create ticket: {str(e)}"
+        logger.error(f"[create_jira_ticket] ERROR: {error_msg}")
+        return error_msg
 
 @tool
 def move_jira_ticket(issue_key: str, transition_name: str) -> str:
@@ -37,6 +53,8 @@ def move_jira_ticket(issue_key: str, transition_name: str) -> str:
         issue_key: The full ticket ID (e.g., KAN-123).
         transition_name: The name of the status to move it to (e.g., 'In Progress', 'Done').
     """
+    logger.info(f"[move_jira_ticket] INPUT: issue_key='{issue_key}', transition_name='{transition_name}'")
+    
     try:
         issue = jira_client.issue(issue_key)
         transitions = jira_client.transitions(issue)
@@ -48,12 +66,19 @@ def move_jira_ticket(issue_key: str, transition_name: str) -> str:
                 break
                 
         if not transition_id:
-            return f"Transition '{transition_name}' not found for {issue_key}."
+            result = f"Transition '{transition_name}' not found for {issue_key}."
+            logger.info(f"[move_jira_ticket] RESULT: {result}")
+            return result
             
         jira_client.transition_issue(issue, transition_id)
-        return f"Successfully moved {issue_key} to {transition_name}."
+        result = f"Successfully moved {issue_key} to {transition_name}."
+        logger.info(f"[move_jira_ticket] RESULT: {result}")
+        return result
+        
     except Exception as e:
-        return f"Failed to move ticket: {str(e)}"
+        error_msg = f"Failed to move ticket: {str(e)}"
+        logger.error(f"[move_jira_ticket] ERROR: {error_msg}")
+        return error_msg
     
 @tool
 def get_my_tasks(timeframe: str) -> str:
@@ -62,7 +87,7 @@ def get_my_tasks(timeframe: str) -> str:
     Args:
         timeframe: Must be 'today', 'overdue', or 'all'.
     """
-    print(f"--- DEBUG: get_my_tasks tool triggered with timeframe='{timeframe}' ---")
+    logger.info(f"[get_my_tasks] INPUT: timeframe='{timeframe}'")
     
     jql = "assignee = currentUser() AND resolution is EMPTY"
     
@@ -73,13 +98,13 @@ def get_my_tasks(timeframe: str) -> str:
         
     try:
         issues = jira_client.search_issues(jql, maxResults=10)
-        print(f"--- DEBUG: Jira returned {len(issues)} issues ---")
+        logger.info(f"[get_my_tasks] ACTION: Jira returned {len(issues)} issues.")
         
         if not issues:
-            # Inject directive into empty state
-            return f"SYSTEM DIRECTIVE: The user cannot see this. Tell the user exactly this: 'Great news! You have no {timeframe} tasks.'"
+            result = f"SYSTEM DIRECTIVE: The user cannot see this. Tell the user exactly this: 'Great news! You have no {timeframe} tasks.'"
+            logger.info(f"[get_my_tasks] RESULT: {result}")
+            return result
             
-        # Inject aggressive directive into the data output
         result = "SYSTEM DIRECTIVE: The user CANNOT see this data. YOU MUST READ THIS LIST AND REPEAT EVERY TICKET TO THE USER IN YOUR RESPONSE:\n\n"
         result += f"*Here are your {timeframe} tasks:*\n"
         
@@ -87,29 +112,37 @@ def get_my_tasks(timeframe: str) -> str:
             due_date = issue.fields.duedate or "No Due Date"
             result += f"- [{issue.key}] {issue.fields.summary} (Due: {due_date})\n"
             
+        # We replace newlines with a literal '\n' string in the log so it doesn't break terminal formatting
+        logger.info(f"[get_my_tasks] RESULT: {result.replace(chr(10), ' | ')}")
         return result
+        
     except Exception as e:
-        return f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        error_msg = f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        logger.error(f"[get_my_tasks] ERROR: {error_msg}")
+        return error_msg
 
 @tool
 def get_daily_summary() -> str:
     """Generates a detailed audit log of the user's personal Jira activity from the last 24 hours.
     Use this when the user asks for their daily summary, status report, or 'what did I do today?'.
     """
-    print("--- DEBUG: get_daily_summary (Personal Audit) tool triggered ---")
+    logger.info("[get_daily_summary] INPUT: No arguments required.")
     
     # Query: Everything UPDATED by the current user in the last 24 hours
     jql = 'assignee = currentUser() AND updated >= -24h ORDER BY updated DESC'
     
     try:
-        # We use expand='changelog' to see exactly what fields were changed
+        # expand='changelog' to see exactly what fields were changed
         issues = jira_client.search_issues(jql, expand='changelog', maxResults=15)
+        logger.info(f"[get_daily_summary] ACTION: Jira returned {len(issues)} recently updated issues.")
         
         result = "SYSTEM DIRECTIVE: The user CANNOT see this data. YOU MUST READ THIS SUMMARY AND FORMAT IT NICELY FOR THE USER:\n\n"
         result += "*📝 Your Personal Activity (Last 24 Hours):*\n\n"
         
         if not issues:
-            return result + "You haven't modified or updated any tickets in the last 24 hours.\n"
+            result += "You haven't modified or updated any tickets in the last 24 hours.\n"
+            logger.info(f"[get_daily_summary] RESULT: {result.replace(chr(10), ' | ')}")
+            return result
             
         for issue in issues:
             # Default action if no specific changelog event is found
@@ -117,9 +150,7 @@ def get_daily_summary() -> str:
             
             # Identify the specific change made by the user
             if hasattr(issue, 'changelog') and hasattr(issue.changelog, 'histories') and issue.changelog.histories:
-                # Get the most recent history item
                 latest_history = issue.changelog.histories[-1]
-                
                 for item in latest_history.items:
                     if item.field == 'status':
                         recent_action = f"You moved this to '{item.toString}'"
@@ -130,11 +161,13 @@ def get_daily_summary() -> str:
             
             result += f"- [{issue.key}] {issue.fields.summary}\n  ↳ *Your Action:* {recent_action}\n"
                 
+        logger.info(f"[get_daily_summary] RESULT: {result.replace(chr(10), ' | ')}")
         return result
         
     except Exception as e:
-        print(f"--- DEBUG: Personal Summary Error: {str(e)} ---")
-        return f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        error_msg = f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        logger.error(f"[get_daily_summary] ERROR: {error_msg}")
+        return error_msg
     
 @tool
 def get_team_activity(project_key: str = None) -> str:
@@ -142,7 +175,7 @@ def get_team_activity(project_key: str = None) -> str:
     If project_key is provided, it filters by that project.
     Use this when the user asks about recent activity, what happened today, or an activity stream.
     """
-    print(f"--- DEBUG: get_team_activity tool triggered for project: {project_key} ---")
+    logger.info(f"[get_team_activity] INPUT: project_key='{project_key}'")
     
     # Query: Find everything updated in the last 24 hours, sorted by most recent first
     jql = 'updated >= -24h ORDER BY updated DESC'
@@ -150,25 +183,24 @@ def get_team_activity(project_key: str = None) -> str:
         jql = f'project = {project_key} AND updated >= -24h ORDER BY updated DESC'
         
     try:
-        # Notice we added expand='changelog' to get the audit trail
         issues = jira_client.search_issues(jql, expand='changelog', maxResults=15)
+        logger.info(f"[get_team_activity] ACTION: Jira returned {len(issues)} recently updated team issues.")
         
         result = "SYSTEM DIRECTIVE: The user CANNOT see this data. YOU MUST READ THIS SUMMARY AND FORMAT IT NICELY FOR THE USER:\n\n"
         result += f"*⏱️ Recent Jira Activity (Last 24 Hours){' for ' + project_key if project_key else ''}:*\n\n"
         
         if not issues:
-            return result + "No tickets were updated or modified in the last 24 hours.\n"
+            result += "No tickets were updated or modified in the last 24 hours.\n"
+            logger.info(f"[get_team_activity] RESULT: {result.replace(chr(10), ' | ')}")
+            return result
             
         for issue in issues:
-            # Default fallback action
             recent_action = "Updated or Commented"
             
-            # Dig into the changelog to find exactly what just happened
             if hasattr(issue, 'changelog') and hasattr(issue.changelog, 'histories') and issue.changelog.histories:
-                latest_history = issue.changelog.histories[-1] # Grab the most recent event
+                latest_history = issue.changelog.histories[-1] 
                 author = latest_history.author.displayName if hasattr(latest_history, 'author') else "Someone"
                 
-                # Check what field was changed
                 for item in latest_history.items:
                     if item.field == 'status':
                         recent_action = f"Moved to '{item.toString}' by {author}"
@@ -179,8 +211,10 @@ def get_team_activity(project_key: str = None) -> str:
             
             result += f"- [{issue.key}] {issue.fields.summary}\n  ↳ *Activity:* {recent_action}\n"
                 
+        logger.info(f"[get_team_activity] RESULT: {result.replace(chr(10), ' | ')}")
         return result
         
     except Exception as e:
-        print(f"--- DEBUG: Team Activity Error: {str(e)} ---")
-        return f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        error_msg = f"SYSTEM DIRECTIVE: The tool failed. Tell the user this error: {str(e)}"
+        logger.error(f"[get_team_activity] ERROR: {error_msg}")
+        return error_msg

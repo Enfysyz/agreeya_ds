@@ -19,27 +19,40 @@ jira_client = JIRA(
 )
 
 @tool
-def create_jira_ticket(summary: str, description: str, project_key: str, issue_type: str = "Task") -> str:
-    """Creates a new Jira ticket.
+def create_jira_ticket(summary: str, description: str, project_key: str, action: str, issue_type: str = "Task", due_date: str = None) -> str:
+    """Handles Jira ticket creation and drafting.
     
     Args:
         summary: The title or short name of the ticket.
         description: The detailed explanation of the ticket.
         project_key: The short, uppercase prefix of the project (e.g., KAN, DEV, PROJ).
+        action: MUST be exactly 'DRAFT' when first asked. ONLY use 'CREATE' if the user has explicitly replied 'yes' or approved the draft.
         issue_type: The type of ticket (defaults to 'Task').
+        due_date: (Optional) The deadline formatted exactly as YYYY-MM-DD.
     """
-    logger.info(f"[create_jira_ticket] INPUT: project_key='{project_key}', summary='{summary}', issue_type='{issue_type}'")
+    logger.info(f"[create_jira_ticket] INPUT: project='{project_key}', action='{action}', due='{due_date}'")
     
+    # THE BRICK WALL: If the AI didn't explicitly use the word "CREATE", block it.
+    if action.upper() != "CREATE":
+        logger.info("[create_jira_ticket] Action was DRAFT. Blocking Jira API call.")
+        return "SYSTEM DIRECTIVE: Draft generated successfully. Do NOT create the ticket yet. You MUST show the user the draft and ask for their explicit approval to create it."
+        
     try:
-        new_issue = jira_client.create_issue(
-            project=project_key,
-            summary=summary,
-            description=description,
-            issuetype={'name': issue_type}
-        )
+        issue_fields = {
+            'project': project_key,
+            'summary': summary,
+            'description': description,
+            'issuetype': {'name': issue_type}
+        }
+        
+        if due_date:
+            issue_fields['duedate'] = due_date
+            
+        new_issue = jira_client.create_issue(**issue_fields)
         result = f"Successfully created ticket: {new_issue.key}"
         logger.info(f"[create_jira_ticket] RESULT: {result}")
         return result
+        
     except Exception as e:
         error_msg = f"Failed to create ticket: {str(e)}"
         logger.error(f"[create_jira_ticket] ERROR: {error_msg}")

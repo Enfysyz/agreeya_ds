@@ -18,11 +18,11 @@ ngrok http 8000
 docker-compose exec app python -c "from src.tools import jira_client; print('Connected Projects:', [p.key for p in jira_client.projects()])"
 ```
 
-# 🤖 Slira: The Slack-to-Jira AI Agent
+# Slira: The Slack-to-Jira AI Agent
 
 Slira is a "Chat-to-Action" AI agent powered by LangGraph, Llama 3.1, and FastAPI. It lives in your Slack workspace and acts as an intelligent, conversational bridge to your Jira instance. Instead of clicking through Jira boards, users can simply ask Slira to create tickets, move statuses, or generate detailed audit logs of recent activity using natural language.
 
-## ✨ Features & Capabilities
+## Features & Capabilities
 
 Slira maintains conversational memory within Slack threads, meaning you can have ongoing, contextual discussions about specific tickets without repeating yourself.
 
@@ -30,9 +30,17 @@ The agent is equipped with the following tools, which can be triggered using nat
 
 ### 1. Ticket Management
 
+> **Human-in-the-Loop (HITL):**  
+> All ticket creation actions follow a confirmation step. Slira first prepares a draft based on your input or conversation context and asks for approval before creating the ticket in Jira. Users can review, edit, or cancel the action.
+
 * **Create Tickets:** Slira can extract project keys, summaries, and descriptions from your chat to instantly draft new Jira issues.
 
   * *Example:* `@Slira Create a bug in the KAN project titled 'Login API Failing' with the description 'The endpoint is returning a 500 error.'`
+
+* **Slack Thread → Ticket Creation:** When a discussion in a Slack thread evolves into actionable work, Slira can automatically generate a Jira ticket from the entire conversation.
+
+  * *Example:* `@Slira create a ticket for this in KAN`
+
 * **Move Tickets:** Seamlessly transition tickets across your board.
 
   * *Example:* `@Slira Move KAN-123 to In Progress.`
@@ -55,7 +63,7 @@ The agent is equipped with the following tools, which can be triggered using nat
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Orchestration:** LangGraph & Langchain
 * **LLM:** Ollama (Llama 3.1 8B running locally)
@@ -65,7 +73,7 @@ The agent is equipped with the following tools, which can be triggered using nat
 
 ---
 
-## 🚀 First-Time Setup & Installation
+## First-Time Setup & Installation
 
 ### Prerequisites
 
@@ -107,6 +115,12 @@ Build and start the application using Docker Compose. This will spin up the Fast
 docker-compose up --build -d
 ```
 
+Install the Ollama model
+
+```bash
+docker exec -it ollama_slira ollama pull llama3.1
+```
+
 *(Note: To view real-time logs and see the AI's internal thought process, run `docker-compose logs -f app`)*
 
 ### 3. Expose the Local Server to Slack
@@ -126,20 +140,15 @@ ngrok http 8000
    * *Example:* `https://a1b2.ngrok-free.app/events/slack`
 4. Wait for the green **Verified** checkmark, scroll to the bottom, and click **Save Changes**.
 
-*(⚠️ **Important:** If you are on the free tier of Ngrok, your URL will change every time you restart Ngrok. You must update the Slack dashboard with the new URL whenever this happens).*
+*(If you are on the free tier of Ngrok, your URL will change every time you restart Ngrok. You must update the Slack dashboard with the new URL whenever this happens).*
 
 ---
 
-## 🧠 How Memory Works (Architecture Note)
+## How Memory Works
 
 Slira uses Slack `thread_ts` timestamps to generate unique, deterministic UUIDs for LangGraph.
 
 * If you **reply in a thread**, the bot accesses its short-term memory and remembers previous tickets and context.
 * If you send a **new message in the channel**, the bot starts with a fresh, blank state.
 
----
 
-## 📝 Development Notes
-
-* **Live Reloading:** The FastAPI server is configured with `watchfiles` for hot-reloading. If you edit Python files in the `src/` directory, the Docker container will automatically restart the server.
-* **Database Ignores:** A `.watchignore` file is included to prevent LangGraph's local SQLite memory databases from triggering false server reloads.

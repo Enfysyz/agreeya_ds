@@ -54,10 +54,11 @@ If the user asks you to create a ticket (or create one based on a thread), YOU M
 - STEP 2 (Present): The system will automatically present the draft.
 - STEP 3 (Wait & Act): If the user replies with "yes" or confirms the draft, ONLY THEN select 'execute_ticket_creation' intent.
 *** MOVING TICKETS ***
-If the user asks to move a ticket to a new status (e.g., "move it to in progress"):
+If the user asks to move a ticket to a new status (e.g., "move KAN-3 to in progress" or "move it to done"):
 - Select 'move_ticket' intent.
+- YOU MUST extract the exact ticket ID (e.g., "KAN-3") into `move_issue_key`. If the user just says "move it", leave it blank.
 - YOU MUST extract the status name into `move_transition_name` (e.g., "In Progress").
-- DO NOT put the status name into `ticket_project_key` or any other field!
+- DO NOT put the ticket ID or status name into `ticket_project_key`!
 """
 
 def router_node(state: AgentState):
@@ -162,6 +163,9 @@ def move_ticket_node(state: AgentState):
 
     if not issue_key or not transition_name:
         return {"messages": [AIMessage(content="I'm missing the required parameters to move a ticket.")]}
+        
+    # Sanitize issue key to ensure it has a hyphen (e.g., 'KAN 3' -> 'KAN-3')
+    issue_key = issue_key.replace(" ", "-").upper()
         
     result = move_jira_ticket(issue_key=issue_key, transition_name=transition_name)
     return {

@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from langgraph_sdk import get_client
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 1. Initialize the Slack App
 slack_app = AsyncApp(
@@ -34,39 +34,36 @@ async def run_langgraph_agent(event, say):
     thread_id_base = thread_ts if thread_ts else message_ts
     thread_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(thread_id_base)))
 
-    # --- NEW: FETCH THREAD CONTEXT ---
-    full_prompt = text
-    if thread_ts:
-        try:
-            replies = await slack_app.client.conversations_replies(
-                channel=channel_id,
-                ts=thread_ts
-            )
+    try:
+        # --- NEW: 14-DAY CALENDAR CHEAT SHEET ---
+        today = datetime.now()
+        calendar = "--- SYSTEM CALENDAR ---\n"
+        for i in range(14):
+            day = today + timedelta(days=i)
+            if i == 0:
+                calendar += f"Today: {day.strftime('%A, %Y-%m-%d')}\n"
+            elif i == 1:
+                calendar += f"Tomorrow: {day.strftime('%A, %Y-%m-%d')}\n"
+            else:
+                calendar += f"In {i} days: {day.strftime('%A, %Y-%m-%d')}\n"
+        
+        full_prompt = f"{calendar}\n--- USER COMMAND ---\n{text}"
+        
+        # Only inject previous unmentioned thread history if this is the FIRST time the bot is replying
+        if thread_ts:
+            replies = await slack_app.client.conversations_replies(channel=channel_id, ts=thread_ts)
+            bot_replies = [m for m in replies.get("messages", []) if m.get("bot_id")]
             
-            # --- NEW: 14-DAY CALENDAR CHEAT SHEET ---
-            today = datetime.now()
-            history_text = "--- SYSTEM CALENDAR ---\n"
-            for i in range(14):
-                day = today + timedelta(days=i)
-                if i == 0:
-                    history_text += f"Today: {day.strftime('%A, %Y-%m-%d')}\n"
-                elif i == 1:
-                    history_text += f"Tomorrow: {day.strftime('%A, %Y-%m-%d')}\n"
-                else:
-                    history_text += f"In {i} days: {day.strftime('%A, %Y-%m-%d')}\n"
-            history_text += "\n--- PREVIOUS THREAD CONTEXT ---\n"
-            
-            for msg in replies.get("messages", []):
-                if msg.get("ts") != message_ts:
-                    msg_text = _clean_text(msg.get("text", ""))
-                    role = "Bot" if msg.get("bot_id") else "User"
-                    history_text += f"- {role}: {msg_text}\n"
-            
-            history_text += f"\n--- USER COMMAND ---\n{text}"
-            full_prompt = history_text
-            
-        except Exception as e:
-            print(f"Failed to fetch thread history: {e}")
+            if not bot_replies:
+                history_text = "\n--- PREVIOUS THREAD CONTEXT (Unmentioned) ---\n"
+                for msg in replies.get("messages", []):
+                    if msg.get("ts") != message_ts:
+                        msg_text = _clean_text(msg.get("text", ""))
+                        history_text += f"- User: {msg_text}\n"
+                full_prompt = f"{calendar}{history_text}\n--- USER COMMAND ---\n{text}"
+
+    except Exception as e:
+        print(f"Failed to build context: {e}")
 
     try:
         try:

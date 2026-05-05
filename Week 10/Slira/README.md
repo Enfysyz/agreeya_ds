@@ -1,26 +1,8 @@
-# Install Ollama model
-```bash
-docker exec -it ollama_slira ollama pull llama3.1
-```
-
-# Ngrok Setup
-## Get URL
-```bash
-ngrok http 8000
-```
-
-## Update Slack Config
-- Go to https://api.slack.com/apps and choose your app
-- Change link under `Event Subscriptions` (eg. https<nolink>://a1b2-c3d4.ngrok-free.app/events/slack)
-
-# Test Jira connection
-```bash
-docker-compose exec app python -c "from src.tools import jira_client; print('Connected Projects:', [p.key for p in jira_client.projects()])"
-```
-
 # Slira: The Slack-to-Jira AI Agent
 
 Slira is a "Chat-to-Action" AI agent powered by LangGraph, Llama 3.1, and FastAPI. It lives in your Slack workspace and acts as an intelligent, conversational bridge to your Jira instance. Instead of clicking through Jira boards, users can simply ask Slira to create tickets, move statuses, or generate detailed audit logs of recent activity using natural language.
+
+<img src="media\Slira_workflow.png" width="1300">
 
 ## Features & Capabilities
 
@@ -142,6 +124,10 @@ ngrok http 8000
 
 *(If you are on the free tier of Ngrok, your URL will change every time you restart Ngrok. You must update the Slack dashboard with the new URL whenever this happens).*
 
+#### Test Jira connection
+```bash
+docker-compose exec app python -c "from src.tools import jira_client; print('Connected Projects:', [p.key for p in jira_client.projects()])"
+```
 ---
 
 ## How Memory Works

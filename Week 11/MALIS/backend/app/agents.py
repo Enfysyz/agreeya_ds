@@ -1,30 +1,82 @@
 import os
+from pydantic import BaseModel, Field
 from langchain_community.chat_models import ChatOllama
 from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
 from app.schema import WorkflowState
+import json
 
-# Configure Ollama to point to the docker service
+# 1. Define the exact schema
+class FraudAnalysis(BaseModel):
+    score: int = Field(description="Fraud risk score from 0 to 100. Higher means more risk.")
+    reason: str = Field(description="A concise, one-sentence explanation for the assigned score.")
+
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-llm = ChatOllama(base_url=OLLAMA_URL, model="llama3", temperature=0.1)
+
+# 2. Initialize the LLM with format="json"
+# This is crucial: it forces the Ollama engine to strictly generate valid JSON syntax.
+llm = ChatOllama(
+    base_url=OLLAMA_URL, 
+    model="llama3", 
+    temperature=0.1, 
+    format="json"
+)
+
+# 3. Set up the Pydantic parser
+parser = PydanticOutputParser(pydantic_object=FraudAnalysis)
 
 def fraud_detection_node(state: WorkflowState) -> WorkflowState:
     shipment = state["shipment"]
     
-    prompt = PromptTemplate.from_template(
-        "Analyze this shipment for fraud risk (0-100) and provide a 1 sentence reason. "
-        "Shipment: {shipment}\nFormat: 'Score: [number]\nReason: [text]'"
+    # We add an explicit instruction to avoid the 'properties' wrapper
+    prompt = PromptTemplate(
+        template=(
+            "Analyze this shipment for fraud risk.\n"
+            "Shipment details: {shipment}\n\n"
+            "{format_instructions}\n"
+            "IMPORTANT: Return ONLY a flat JSON object. Do not wrap your response in a 'properties' key. Start directly with {{'score': ...}}"
+        ),
+        input_variables=["shipment"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
     )
-    chain = prompt | llm
-    result = chain.invoke({"shipment": shipment}).content
     
-    # In production, use structured output parsing. For now, simple string splitting.
+    # Pipe to StrOutputParser to isolate the raw text from the LLM
+    chain = prompt | llm | StrOutputParser()
+    
     try:
-        score_line, reason_line = result.split('\n', 1)
-        score = int(score_line.replace("Score: ", "").strip())
-        reason = reason_line.replace("Reason: ", "").strip()
-    except Exception:
+        raw_output = chain.invoke({"shipment": shipment})
+        print(f"\n--- DEBUG: Raw LLM Output ---\n{raw_output}\n---------------------------\n")
+        
+        # 1. Clean markdown if the LLM added it (e.g., ```json ... ```)
+        cleaned_output = raw_output.strip()
+        if cleaned_output.startswith("```json"):
+            cleaned_output = cleaned_output[7:]
+        if cleaned_output.endswith("```"):
+            cleaned_output = cleaned_output[:-3]
+        cleaned_output = cleaned_output.strip()
+
+        # 2. Parse the string into a Python dictionary natively
+        output_dict = json.loads(cleaned_output)
+        
+        # 3. The Unwrapper: If Mistral STILL wrapped it in "properties", strip it out!
+        if "properties" in output_dict and isinstance(output_dict["properties"], dict):
+            output_dict = output_dict["properties"]
+            
+        # 4. Instantiate the Pydantic model directly using kwargs unpacking
+        # (This completely bypasses LangChain's crash-prone parser)
+        result = FraudAnalysis(**output_dict)
+        
+        score = result.score
+        reason = result.reason
+        
+    except json.JSONDecodeError:
+        print("Agent Parsing Error: Output was not valid JSON.")
         score = 50
-        reason = "Failed to parse LLM output."
+        reason = "System fallback: LLM failed to output valid JSON syntax."
+    except Exception as e:
+        print(f"Agent Validation Error: {e}")
+        score = 50
+        reason = "System fallback: LLM output did not match expected schema."
 
     return {"fraud_score": score, "fraud_reasoning": reason}
 

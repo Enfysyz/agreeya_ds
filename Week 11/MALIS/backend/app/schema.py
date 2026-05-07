@@ -1,5 +1,5 @@
-from typing import TypedDict, Optional
-from pydantic import BaseModel
+from typing import TypedDict, Optional, Literal
+from pydantic import BaseModel, Field
 
 class ShipmentDetails(BaseModel):
     customer_id: str
@@ -9,6 +9,14 @@ class ShipmentDetails(BaseModel):
 
 class ShipmentRequest(BaseModel):
     shipment: ShipmentDetails
+
+class ComplianceAnalysis(BaseModel):
+    status: Literal["Approved", "Flagged", "Rejected"] = Field(
+        description="The final decision based on regulatory checks."
+    )
+    reason: str = Field(
+        description="A clear, single-sentence explanation of why the status was chosen."
+    )
 
 class WorkflowState(TypedDict):
     shipment: dict

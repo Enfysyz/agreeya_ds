@@ -1,20 +1,17 @@
 import os
+import json
 from pydantic import BaseModel, Field
 from langchain_community.chat_models import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
-from app.schema import WorkflowState
-import json
+from app.schema import WorkflowState, ComplianceAnalysis
 
-# 1. Define the exact schema
 class FraudAnalysis(BaseModel):
     score: int = Field(description="Fraud risk score from 0 to 100. Higher means more risk.")
     reason: str = Field(description="A concise, one-sentence explanation for the assigned score.")
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-# 2. Initialize the LLM with format="json"
-# This is crucial: it forces the Ollama engine to strictly generate valid JSON syntax.
 llm = ChatOllama(
     base_url=OLLAMA_URL, 
     model="llama3", 
@@ -22,32 +19,14 @@ llm = ChatOllama(
     format="json"
 )
 
-# 3. Set up the Pydantic parser
-parser = PydanticOutputParser(pydantic_object=FraudAnalysis)
+# Parsers for format instructions
+fraud_parser = PydanticOutputParser(pydantic_object=FraudAnalysis)
+compliance_parser = PydanticOutputParser(pydantic_object=ComplianceAnalysis)
 
-def fraud_detection_node(state: WorkflowState) -> WorkflowState:
-    shipment = state["shipment"]
-    
-    # We add an explicit instruction to avoid the 'properties' wrapper
-    prompt = PromptTemplate(
-        template=(
-            "Analyze this shipment for fraud risk.\n"
-            "Shipment details: {shipment}\n\n"
-            "{format_instructions}\n"
-            "IMPORTANT: Return ONLY a flat JSON object. Do not wrap your response in a 'properties' key. Start directly with {{'score': ...}}"
-        ),
-        input_variables=["shipment"],
-        partial_variables={"format_instructions": parser.get_format_instructions()},
-    )
-    
-    # Pipe to StrOutputParser to isolate the raw text from the LLM
-    chain = prompt | llm | StrOutputParser()
-    
+# --- HELPER FUNCTION ---
+def parse_llm_output(raw_output: str, pydantic_model: type[BaseModel], fallback_dict: dict) -> dict:
+    """Safely extracts JSON from the LLM, strips markdown/properties, and validates it."""
     try:
-        raw_output = chain.invoke({"shipment": shipment})
-        print(f"\n--- DEBUG: Raw LLM Output ---\n{raw_output}\n---------------------------\n")
-        
-        # 1. Clean markdown if the LLM added it (e.g., ```json ... ```)
         cleaned_output = raw_output.strip()
         if cleaned_output.startswith("```json"):
             cleaned_output = cleaned_output[7:]
@@ -55,30 +34,44 @@ def fraud_detection_node(state: WorkflowState) -> WorkflowState:
             cleaned_output = cleaned_output[:-3]
         cleaned_output = cleaned_output.strip()
 
-        # 2. Parse the string into a Python dictionary natively
         output_dict = json.loads(cleaned_output)
         
-        # 3. The Unwrapper: If Mistral STILL wrapped it in "properties", strip it out!
         if "properties" in output_dict and isinstance(output_dict["properties"], dict):
             output_dict = output_dict["properties"]
             
-        # 4. Instantiate the Pydantic model directly using kwargs unpacking
-        # (This completely bypasses LangChain's crash-prone parser)
-        result = FraudAnalysis(**output_dict)
-        
-        score = result.score
-        reason = result.reason
-        
-    except json.JSONDecodeError:
-        print("Agent Parsing Error: Output was not valid JSON.")
-        score = 50
-        reason = "System fallback: LLM failed to output valid JSON syntax."
+        validated_data = pydantic_model(**output_dict)
+        return validated_data.model_dump()
     except Exception as e:
-        print(f"Agent Validation Error: {e}")
-        score = 50
-        reason = "System fallback: LLM output did not match expected schema."
+        print(f"Parsing error: {e}")
+        return fallback_dict
 
-    return {"fraud_score": score, "fraud_reasoning": reason}
+# --- AGENT NODES ---
+
+def fraud_detection_node(state: WorkflowState) -> WorkflowState:
+    shipment = state["shipment"]
+    
+    prompt = PromptTemplate(
+        template=(
+            "Analyze this logistics shipment for fraud risk.\n"
+            "Shipment details: {shipment}\n\n"
+            "Rules for evaluation:\n"
+            "1. Shipments with a cost > $10,000 have an inherently higher baseline risk.\n"
+            "2. High-value electronics (like servers or laptops) combined with cross-border or long-distance routes carry severe risk.\n"
+            "3. Vague goods descriptions (e.g., 'misc items', 'supplies') should spike the risk score.\n\n"
+            "{format_instructions}\n"
+            "IMPORTANT: Return ONLY a flat JSON object. Do not wrap your response in a 'properties' key."
+        ),
+        input_variables=["shipment"],
+        partial_variables={"format_instructions": fraud_parser.get_format_instructions()},
+    )
+    
+    raw_output = (prompt | llm | StrOutputParser()).invoke({"shipment": shipment})
+    print(f"\n--- Fraud LLM Output ---\n{raw_output}\n------------------------\n")
+    
+    fallback = {"score": 50, "reason": "System fallback: LLM failed to output valid JSON syntax."}
+    result = parse_llm_output(raw_output, FraudAnalysis, fallback)
+
+    return {"fraud_score": result["score"], "fraud_reasoning": result["reason"]}
 
 def funding_node(state: WorkflowState) -> WorkflowState:
     score = state.get("fraud_score", 100)
@@ -105,8 +98,33 @@ def billing_node(state: WorkflowState) -> WorkflowState:
 
 def compliance_node(state: WorkflowState) -> WorkflowState:
     invoice = state.get("invoice_details", {})
+    shipment = state["shipment"]
     
     if invoice.get("status") == "Cancelled":
-        return {"compliance_status": "Rejected", "compliance_notes": "Halted due to funding rejection."}
-    else:
-        return {"compliance_status": "Approved", "compliance_notes": "All regulatory checks passed."}
+         return {"compliance_status": "Rejected", "compliance_notes": "Halted due to prior agent rejection."}
+
+    prompt = PromptTemplate(
+        template=(
+            "Act as a strict Regulatory Compliance Officer for a logistics pipeline.\n"
+            "Evaluate this transaction:\n"
+            "Shipment: {shipment}\n"
+            "Invoice: {invoice}\n\n"
+            "Rules for evaluation:\n"
+            "1. Ensure the tax applied in the invoice is exactly 8% of the base cost. If the math is wrong, status must be 'Flagged'.\n"
+            "2. If the shipment contains hazardous materials, weapons, or controlled substances, status must be 'Rejected'.\n"
+            "3. If the shipment cost exceeds $8,000, it requires an extra audit review; status must be 'Flagged'.\n"
+            "4. Otherwise, status should be 'Approved'.\n\n"
+            "{format_instructions}\n"
+            "IMPORTANT: Return ONLY a flat JSON object. Do not wrap your response in a 'properties' key."
+        ),
+        input_variables=["shipment", "invoice"],
+        partial_variables={"format_instructions": compliance_parser.get_format_instructions()},
+    )
+    
+    raw_output = (prompt | llm | StrOutputParser()).invoke({"shipment": shipment, "invoice": invoice})
+    print(f"\n--- Compliance LLM Output ---\n{raw_output}\n---------------------------\n")
+
+    fallback = {"status": "Flagged", "reason": "System fallback: Failed to parse compliance logic."}
+    result = parse_llm_output(raw_output, ComplianceAnalysis, fallback)
+
+    return {"compliance_status": result["status"], "compliance_notes": result["reason"]}

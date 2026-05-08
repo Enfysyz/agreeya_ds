@@ -5,6 +5,7 @@ from langchain_community.chat_models import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
 from app.schema import WorkflowState, ComplianceAnalysis
+from datetime import datetime, timedelta
 
 class FraudAnalysis(BaseModel):
     score: int = Field(description="Fraud risk score from 0 to 100. Higher means more risk.")
@@ -75,24 +76,56 @@ def fraud_detection_node(state: WorkflowState) -> WorkflowState:
 
 def funding_node(state: WorkflowState) -> WorkflowState:
     score = state.get("fraud_score", 100)
+    cost = state["shipment"].get("cost", 0)
+    current_balance = state.get("customer_outstanding_balance", 0)
     
+    # Calculate the total exposure if we approve this new shipment
+    projected_balance = current_balance + cost
+
     if score > 75:
         return {"funding_decision": "Rejected", "funding_terms": "High fraud risk."}
+        
     elif score > 40:
+        # Enforce the strict $5k limit for moderate-risk profiles
+        if projected_balance > 5000:
+            return {
+                "funding_decision": "Rejected", 
+                "funding_terms": f"Credit Limit Exceeded. Requested: ${cost}. Current Balance: ${current_balance}. Max: $5000."
+            }
         return {"funding_decision": "Approved with Limits", "funding_terms": "Net 15, Max $5k credit."}
+        
     else:
+        # Standard profiles might have a higher implied limit, e.g., $20k
+        if projected_balance > 20000:
+            return {
+                "funding_decision": "Rejected", 
+                "funding_terms": "Standard Credit Limit ($20k) Exceeded."
+            }
         return {"funding_decision": "Approved", "funding_terms": "Net 30, Standard limits."}
 
 def billing_node(state: WorkflowState) -> WorkflowState:
     shipment = state["shipment"]
     funding = state.get("funding_decision", "Rejected")
+    terms = state.get("funding_terms", "")
     
     if funding == "Rejected":
-        invoice = {"status": "Cancelled", "total": 0}
+        invoice = {"status": "Cancelled", "total": 0, "due_date": None}
     else:
         base_cost = shipment.get("cost", 0)
-        tax = base_cost * 0.08 # 8% tax mock
-        invoice = {"status": "Generated", "base_cost": base_cost, "tax": tax, "total": base_cost + tax}
+        tax = base_cost * 0.08
+        total_cost = base_cost + tax
+        
+        # Calculate due date based on the enforced terms
+        days_to_pay = 15 if "Net 15" in terms else 30
+        due_date = (datetime.now() + timedelta(days=days_to_pay)).strftime("%Y-%m-%d")
+        
+        invoice = {
+            "status": "Generated", 
+            "base_cost": base_cost, 
+            "tax": tax, 
+            "total": total_cost,
+            "due_date": due_date # <-- The programmatic rule applied
+        }
         
     return {"invoice_details": invoice}
 

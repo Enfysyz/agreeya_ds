@@ -20,6 +20,7 @@ class ComplianceAnalysis(BaseModel):
 
 class WorkflowState(TypedDict):
     shipment: dict
+    customer_outstanding_balance: float
     fraud_score: Optional[int]
     fraud_reasoning: Optional[str]
     funding_decision: Optional[str]

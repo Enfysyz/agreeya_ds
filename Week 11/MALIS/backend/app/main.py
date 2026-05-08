@@ -37,9 +37,13 @@ async def process_shipment(request: ShipmentRequest):
         # Configure LangGraph with this thread_id to persist state correctly
         config = {"configurable": {"thread_id": thread_id}}
         
+        # temp
+        current_balance = 2500.00
+
         # Initialize the graph state
         initial_state = {
             "shipment": request.shipment.model_dump(),
+            "customer_outstanding_balance": current_balance,
             "fraud_score": None,
             "fraud_reasoning": None,
             "funding_decision": None,
@@ -66,12 +70,20 @@ async def stream_shipment(request: ShipmentRequest):
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
     
+    # temp
+    current_balance = 2500.00
+    
+    # Initialize the graph state
     initial_state = {
         "shipment": request.shipment.model_dump(),
-        "fraud_score": None, "fraud_reasoning": None,
-        "funding_decision": None, "funding_terms": None,
+        "customer_outstanding_balance": current_balance,
+        "fraud_score": None,
+        "fraud_reasoning": None,
+        "funding_decision": None,
+        "funding_terms": None,
         "invoice_details": None,
-        "compliance_status": None, "compliance_notes": None
+        "compliance_status": None,
+        "compliance_notes": None
     }
 
     async def event_generator():

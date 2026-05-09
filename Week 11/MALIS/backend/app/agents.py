@@ -99,7 +99,7 @@ def funding_node(state: WorkflowState) -> WorkflowState:
         if projected_balance > 20000:
             return {
                 "funding_decision": "Rejected", 
-                "funding_terms": "Standard Credit Limit ($20k) Exceeded."
+                "funding_terms": f"Credit Limit Exceeded. Requested: ${cost}. Current Balance: ${current_balance}. Max: $20k."
             }
         return {"funding_decision": "Approved", "funding_terms": "Net 30, Standard limits."}
 

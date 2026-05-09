@@ -7,6 +7,17 @@ docker exec -it malis_ollama ollama pull llama3
 ```bash
 docker exec -it malis_db psql -U user -d logistics
 ```
+## Business Logic
+
+The pipeline evaluates requests sequentially across four distinct AI agents:
+
+- Fraud Agent: Analyzes the shipment route, cost, and goods for risk (0-100 score).
+
+- Funding Agent: Acts as the financial gatekeeper. It queries the customer_invoices database to calculate the customer's total unpaid balance and enforces strict credit limits based on the Fraud Agent's risk score ($5k max for moderate risk, $20k max for standard).
+
+- Billing Agent: Dynamically generates an invoice (including 8% tax) and assigns payment terms (e.g., Net 15 vs. Net 30).
+
+- Compliance Agent: Validates the final transaction against strict regulatory rules (e.g., hazardous materials, correct tax math).
 
 ## Endpoints
 

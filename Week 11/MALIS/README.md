@@ -81,12 +81,12 @@ Same as `/process-shipment`.
 
 #### Stream Response Example
 
-```text
+```json
 data: {"agent": "fraud", "state_update": {"fraud_score": 15, "fraud_reasoning": "Standard shipment, low risk."}}
 
 data: {"agent": "funding", "state_update": {"funding_decision": "Approved", "funding_terms": "Net 30, Standard limits."}}
 
-data: {"agent": "billing", "state_update": {"invoice_details": {"status": "Generated", "base_cost": 4500.0, "tax": 360.0, "total": 4860.0}}}
+data: {"agent": "billing", "state_update": {"invoice_details": {"status": "Generated", "base_cost": 4500.0, "tax": 360.0, "total": 4860.0,  "due_date": "2026-06-07"}}}
 
 data: {"agent": "compliance", "state_update": {"compliance_status": "Approved", "compliance_notes": "All regulatory checks passed."}}
 
